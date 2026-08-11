@@ -1,8 +1,8 @@
-"""Aplicacao FastAPI do JobPilot.
+"""JobPilot FastAPI application.
 
-M0: esqueleto. Expoe apenas o health check. Os componentes do pipeline
-(JobSource, Normalizer, Matcher, Generator, ApplicationQueue) entram nos
-milestones seguintes via SDD.
+M0: skeleton. Exposes only the health check. The pipeline components
+(JobSource, Normalizer, Matcher, Generator, ApplicationQueue) arrive in the
+following milestones via SDD.
 """
 
 from fastapi import FastAPI
@@ -11,10 +11,10 @@ from jobpilot import __version__
 
 
 def create_app() -> FastAPI:
-    """Cria e configura a instancia da aplicacao.
+    """Create and configure the application instance.
 
-    Factory em vez de app global: facilita testar com uma instancia limpa
-    por teste e injetar dependencias nos milestones futuros.
+    A factory instead of a global app: makes it easy to test with a clean
+    instance per test and to inject dependencies in future milestones.
     """
     app = FastAPI(title="JobPilot", version=__version__)
 

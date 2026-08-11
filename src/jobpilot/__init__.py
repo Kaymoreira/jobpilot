@@ -1,3 +1,3 @@
-"""JobPilot: agente autonomo de candidaturas."""
+"""JobPilot: autonomous job-application agent."""
 
 __version__ = "0.1.0"

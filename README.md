@@ -1,31 +1,33 @@
 # JobPilot
 
-Agente autonomo de candidaturas. Ingere vagas, avalia o *fit* com o meu CV,
-gera CV e carta de apresentacao adaptados para cada vaga e monta uma **fila de
-candidaturas prontas** para envio.
+Autonomous job-application agent. It ingests job postings, scores the *fit*
+against my CV, generates a tailored CV and cover letter for each posting, and
+builds a **queue of ready-to-send applications**.
 
-**Decisao de produto:** o agente e autonomo ate a fila. O **envio final e
-sempre um clique humano** — nunca submit automatico em job board de terceiro.
-Motivo: (1) ToS de LinkedIn/Gupy e afins proibem automacao de submit; (2)
-candidatar para a vaga errada e o classico *fail-open* (o gate que aprova
-quando devia barrar). O ponto de decisao fica com a pessoa.
+**Product decision:** the agent is autonomous up to the queue. The **final
+submission is always a human click**, never an automatic submit on a
+third-party job board. Reasons: (1) the ToS of LinkedIn, Gupy and similar
+boards forbid automated submission; (2) applying to the wrong job is the
+classic *fail-open* (the gate that approves when it should block). The decision
+point stays with the person.
 
-## Arquitetura (portas e adapters)
+## Architecture (ports and adapters)
 
 ```
 [JobSource] -> [Normalizer] -> [Matcher] -> [Generator] -> [ApplicationQueue] -> [Report/UI]
-  (porta)      (Job canonico)  (score+fit)  (CV+carta)     (persistencia)        (1 clique)
+  (port)       (canonical Job)  (score+fit)  (CV+cover)     (persistence)         (one click)
 ```
 
-A fonte de vaga e plugavel: o nucleo nao depende de *de onde vem a vaga*.
+The job source is pluggable: the core does not depend on *where the job comes
+from*.
 
 ## Stack
 
 - Python 3.12+ / FastAPI
-- pytest + pytest-cov com **gate de cobertura** (`--cov-fail-under=80`)
-- SQLite (persistencia local, a partir do M1)
+- pytest + pytest-cov with a **coverage gate** (`--cov-fail-under=80`)
+- SQLite (local persistence, from M1 onward)
 
-## Rodando
+## Running
 
 ```bash
 python -m venv .venv
@@ -35,18 +37,19 @@ pip install -e ".[dev]"
 
 # API
 uvicorn jobpilot.app:app --reload
-# health: http://127.0.0.1:8000/health
+# health:      http://127.0.0.1:8000/health
+# interactive: http://127.0.0.1:8000/docs
 
-# Testes + cobertura
+# Tests + coverage
 pytest
 ```
 
-## Estado
+## Status
 
-M0 (esqueleto) concluido: FastAPI + health check + gate de cobertura ativo e
-verificado no caminho de reprovacao. Milestones seguintes (M1+) sao entregues
-por spec-driven development.
+M0 (skeleton) done: FastAPI + health check + coverage gate active and verified
+on the failing path. Later milestones (M1+) are delivered through spec-driven
+development.
 
 ## Roadmap
 
-Ver o briefing de planejamento para o detalhe dos milestones M0–M7.
+See the planning brief for the milestone breakdown (M0-M7).

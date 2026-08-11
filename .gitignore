@@ -1,3 +1,4 @@
+# Note: repo content is in English (portfolio for international roles).
 # Python
 __pycache__/
 *.py[cod]
@@ -11,29 +12,29 @@ dist/
 venv/
 env/
 
-# Testes / cobertura
+# Tests / coverage
 .pytest_cache/
 .coverage
 .coverage.*
 htmlcov/
 coverage.xml
 
-# Banco local (SQLite entra nos proximos milestones)
+# Local database (SQLite arrives in the next milestones)
 *.db
 *.sqlite3
 
-# Segredos / config local (NUNCA versionar chave de API de LLM)
+# Secrets / local config (NEVER commit an LLM API key)
 .env
 .env.*
 !.env.example
 
-# IDE / SO
+# IDE / OS
 .vscode/
 .idea/
 .DS_Store
 Thumbs.db
 
-# Skills de agente (tooling de dev, nao produto). Reinstalar com:
+# Agent skills (dev tooling, not product). Reinstall with:
 #   npx @tech-leads-club/agent-skills install --force --skill tlc-spec-driven
 .claude/
 .cursor/

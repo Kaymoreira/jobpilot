@@ -1,7 +1,7 @@
 [project]
 name = "jobpilot"
 version = "0.1.0"
-description = "Agente autonomo de candidaturas: ingere vagas, avalia fit com o CV, gera CV e carta adaptados e monta uma fila para envio com 1 clique."
+description = "Autonomous job-application agent: ingests jobs, scores fit against your CV, generates tailored CV and cover letter, and builds a one-click application queue."
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
