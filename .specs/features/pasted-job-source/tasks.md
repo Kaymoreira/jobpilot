@@ -118,6 +118,7 @@ T3 → T4 → T5 → T6
 **Gate**: quick
 
 **Commit**: `feat(models): add canonical Job model and new_from factory`
+**Status**: ✅ Complete (7 tests)
 
 ---
 

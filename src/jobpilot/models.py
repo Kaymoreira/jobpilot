@@ -6,7 +6,10 @@ explicitly instead of producing a half-filled Job.
 """
 
 import logging
+from datetime import UTC, datetime
+from typing import Literal
 from urllib.parse import urlparse
+from uuid import uuid4
 
 from pydantic import BaseModel, field_validator
 
@@ -61,3 +64,33 @@ class JobCreate(BaseModel):
             return candidate
         logger.warning("discarding malformed link: %r", value)
         return None
+
+
+class Job(BaseModel):
+    """The canonical persisted/returned job.
+
+    ``id``, ``source`` and ``created_at`` are server-owned. Build instances with
+    ``Job.new_from`` so those values are always generated here, never taken from
+    caller input.
+    """
+
+    id: str
+    source: Literal["pasted"] = "pasted"
+    title: str
+    company: str
+    description: str = ""
+    requirements: list[str] = []
+    link: str | None = None
+    created_at: datetime
+
+    @classmethod
+    def new_from(cls, data: JobCreate) -> "Job":
+        return cls(
+            id=uuid4().hex,
+            title=data.title,
+            company=data.company,
+            description=data.description or "",
+            requirements=list(data.requirements),
+            link=data.link,
+            created_at=datetime.now(UTC),
+        )

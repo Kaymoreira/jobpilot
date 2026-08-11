@@ -1,11 +1,12 @@
 """Unit tests for the domain models (T1: JobCreate, T2: Job)."""
 
 import logging
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from pydantic import ValidationError
 
-from jobpilot.models import JobCreate
+from jobpilot.models import Job, JobCreate
 
 # ---------------------------------------------------------------------------
 # T1: JobCreate input model (PJS-03, PJS-04, PJS-08, PJS-11, PJS-18, PJS-19)
@@ -93,3 +94,72 @@ def test_unknown_and_server_owned_fields_are_dropped():
     assert "id" not in dumped
     assert "source" not in dumped
     assert "created_at" not in dumped
+
+
+# ---------------------------------------------------------------------------
+# T2: canonical Job + new_from (PJS-02, PJS-05, PJS-07, PJS-13, PJS-15, PJS-16)
+# ---------------------------------------------------------------------------
+
+
+def test_new_from_always_sets_source_pasted():
+    job = Job.new_from(JobCreate(title="Senior QE", company="Acme"))
+
+    assert job.source == "pasted"
+
+
+def test_new_from_generates_unique_ids():
+    data = JobCreate(title="Senior QE", company="Acme")
+
+    first = Job.new_from(data)
+    second = Job.new_from(data)
+
+    assert first.id != second.id
+    assert first.id  # non-empty
+
+
+def test_new_from_sets_timezone_aware_utc_created_at():
+    job = Job.new_from(JobCreate(title="Senior QE", company="Acme"))
+
+    assert isinstance(job.created_at, datetime)
+    assert job.created_at.utcoffset() == timedelta(0)
+
+
+def test_new_from_defaults_description_and_requirements_when_absent():
+    job = Job.new_from(JobCreate(title="Senior QE", company="Acme"))
+
+    assert job.description == ""
+    assert job.requirements == []
+
+
+def test_new_from_carries_supplied_fields():
+    data = JobCreate(
+        title="Senior QE",
+        company="Acme",
+        description="Test everything",
+        requirements=["pytest", "playwright"],
+        link="https://acme.com/1",
+    )
+
+    job = Job.new_from(data)
+
+    assert job.title == "Senior QE"
+    assert job.company == "Acme"
+    assert job.description == "Test everything"
+    assert job.requirements == ["pytest", "playwright"]
+    assert job.link == "https://acme.com/1"
+
+
+def test_new_from_preserves_unicode_and_emoji():
+    data = JobCreate(title="Señor QE 🚀", company="Açme ✨")
+
+    job = Job.new_from(data)
+
+    assert job.title == "Señor QE 🚀"
+    assert job.company == "Açme ✨"
+
+
+def test_caller_cannot_override_source_via_job_create():
+    # source is server-owned: JobCreate ignores it, new_from never reads it.
+    data = JobCreate(title="A", company="B", source="scraped")
+
+    assert Job.new_from(data).source == "pasted"
