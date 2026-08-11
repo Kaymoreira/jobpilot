@@ -32,3 +32,10 @@ coverage.xml
 .idea/
 .DS_Store
 Thumbs.db
+
+# Skills de agente (tooling de dev, nao produto). Reinstalar com:
+#   npx @tech-leads-club/agent-skills install --force --skill tlc-spec-driven
+.claude/
+.cursor/
+.windsurf/
+.agents/
