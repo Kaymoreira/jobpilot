@@ -187,25 +187,25 @@ Each requirement gets a unique ID for tracking across design, tasks, and validat
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| PJS-01 | P1: Persist | Tasks | Implementing |
-| PJS-02 | P1: Persist | Tasks | Implementing |
-| PJS-03 | P1: Persist | Tasks | Implementing |
-| PJS-04 | P1: Persist | Tasks | Implementing |
-| PJS-05 | P1: Persist | Tasks | Implementing |
-| PJS-06 | P1: Read back | Tasks | Implementing |
-| PJS-07 | P1: Read back | Tasks | Implementing |
-| PJS-08 | P1: Reject | Tasks | Implementing |
-| PJS-09 | P1: Reject | Tasks | Implementing |
-| PJS-10 | P1: Reject | Tasks | Implementing |
-| PJS-11 | P1: Persist (malformed link → null + warning, lenient) | Tasks | Implementing |
-| PJS-12 | P2: List | Tasks | Implementing |
-| PJS-13 | P2: List | Tasks | Implementing |
-| PJS-14 | Edge: atomic write failure | Tasks | Implementing |
-| PJS-15 | Edge: Unicode preserved | Tasks | Implementing |
-| PJS-16 | Edge: duplicate pastes distinct | Tasks | Implementing |
-| PJS-17 | Edge: non-JSON content-type | Tasks | Implementing |
-| PJS-18 | Edge: server-owned fields ignored | Tasks | Implementing |
-| PJS-19 | P1: Reject (title/company > 512 chars) | Tasks | Implementing |
+| PJS-01 | P1: Persist | Done | Verified |
+| PJS-02 | P1: Persist | Done | Verified |
+| PJS-03 | P1: Persist | Done | Verified |
+| PJS-04 | P1: Persist | Done | Verified |
+| PJS-05 | P1: Persist | Done | Verified |
+| PJS-06 | P1: Read back | Done | Verified |
+| PJS-07 | P1: Read back | Done | Verified |
+| PJS-08 | P1: Reject | Done | Verified |
+| PJS-09 | P1: Reject | Done | Verified |
+| PJS-10 | P1: Reject | Done | Verified |
+| PJS-11 | P1: Persist (malformed link → null + warning, lenient) | Done | Verified |
+| PJS-12 | P2: List | Done | Verified |
+| PJS-13 | P2: List | Done | Verified |
+| PJS-14 | Edge: atomic write failure | Done | Verified |
+| PJS-15 | Edge: Unicode preserved | Done | Verified |
+| PJS-16 | Edge: duplicate pastes distinct | Done | Verified |
+| PJS-17 | Edge: non-JSON content-type | Done | Verified |
+| PJS-18 | Edge: server-owned fields ignored | Done | Verified |
+| PJS-19 | P1: Reject (title/company > 512 chars) | Done | Verified |
 
 **ID format:** `PJS-[NUMBER]` (PastedJobSource).
 

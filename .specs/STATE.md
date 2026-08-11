@@ -41,9 +41,14 @@ Handoff is the single most-recent snapshot.
 
 - **Feature:** `pasted-job-source` (M1 — canonical `Job` + `PastedJobSource`).
 - **Branch:** `feat/m1-job-pasted-source`.
-- **Phase:** Specify ✅ · Design ✅ (approved) · Tasks ✅ drafted — all three validators
-  clean (0/0). Spec has 19 IDs `PJS-01..19`; 6 tasks `T1..T6`.
-- **Next:** Execute — awaiting user approval of `tasks.md`. 6 tasks ≤ ~8 → single
-  batch, inline (no sub-agents); Verifier runs automatically after T6.
-- **Scope:** Large (Pydantic models + SQLite behind `JobRepository` port + 3 endpoints
-  + body-size guard). No new dependencies (all stdlib + existing FastAPI/Pydantic).
+- **Phase:** Specify ✅ · Design ✅ · Tasks ✅ · Execute ✅ · Verify ✅ **PASS**.
+  M1 complete. `validate_state.py` exit 0; all `PJS-01..19` Verified.
+- **Commits:** `9e92686` (docs) → `59b3a3b` T1 → `64bc7ac` T2 → `2f101f9` T3 →
+  `fea4ef2` T4 → `c9c65a0` T5 → `8dd4c92` T6 → `757601b` verifier fix (test-only).
+- **Verifier:** round 1 FAIL — 1 surviving mutant (`models.py:61` null-link branch)
+  + 1 missing no-HTTP assertion (PJS-04). Both fixed in `757601b`; round 2 PASS,
+  sensor 5/5 killed. Lesson L-001 (candidate): Pydantic v2 skips validators on
+  defaults, so the default branch only runs when the field is passed explicitly —
+  test `link=None` explicitly, not by omitting it.
+- **Gate:** 62 tests (baseline 2), models.py 100%, overall 95.6%. No new dependencies.
+- **Next milestone:** M2 (base CV / structured profile).
