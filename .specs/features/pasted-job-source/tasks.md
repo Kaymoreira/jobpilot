@@ -180,6 +180,7 @@ T3 → T4 → T5 → T6
 **Gate**: full
 
 **Commit**: `feat(api): add jobs endpoints behind the repository port`
+**Status**: ✅ Complete (13 tests)
 
 ---
 
