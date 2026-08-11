@@ -73,6 +73,36 @@ def test_non_http_scheme_link_becomes_none():
     assert job.link is None
 
 
+def test_absent_link_stays_none():
+    # An omitted link must never be fabricated into a value (fail-open guard).
+    job = JobCreate(title="A", company="B")
+
+    assert job.link is None
+
+
+def test_explicit_null_link_stays_none():
+    # Passing link=None explicitly runs the validator (unlike the default,
+    # which Pydantic skips); it must return None, not fabricate a value.
+    job = JobCreate(title="A", company="B", link=None)
+
+    assert job.link is None
+
+
+def test_supplying_a_link_makes_no_outbound_http(monkeypatch):
+    import socket
+
+    def _no_network(*args, **kwargs):
+        raise AssertionError("M1 must not make outbound HTTP for a pasted link")
+
+    monkeypatch.setattr(socket.socket, "connect", _no_network)
+
+    job = Job.new_from(
+        JobCreate(title="A", company="B", link="https://acme.com/123")
+    )
+
+    assert job.link == "https://acme.com/123"
+
+
 def test_description_is_trimmed_and_optional():
     with_desc = JobCreate(title="A", company="B", description="  text  ")
     without_desc = JobCreate(title="A", company="B")
