@@ -53,3 +53,9 @@ development.
 ## Roadmap
 
 See the planning brief for the milestone breakdown (M0-M7).
+
+## Contributing
+
+Engineering standards, commit conventions and the testing philosophy live in
+[CONTRIBUTING.md](CONTRIBUTING.md). Release history is in
+[CHANGELOG.md](CHANGELOG.md).
