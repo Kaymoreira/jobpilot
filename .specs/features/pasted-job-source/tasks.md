@@ -209,6 +209,7 @@ T3 → T4 → T5 → T6
 **Gate**: full
 
 **Commit**: `feat(app): wire sqlite repository and jobs router into the app`
+**Status**: ✅ Complete (7 tests; `.gitignore` already covered `*.db`)
 
 ---
 
