@@ -238,6 +238,7 @@ T3 → T4 → T5 → T6
 **Gate**: build
 
 **Commit**: `feat(app): reject oversized request bodies before parsing`
+**Status**: ✅ Complete (6 tests, incl. ASGI-level cross-chunk accumulation)
 
 ---
 

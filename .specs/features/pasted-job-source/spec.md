@@ -196,7 +196,7 @@ Each requirement gets a unique ID for tracking across design, tasks, and validat
 | PJS-07 | P1: Read back | Tasks | Implementing |
 | PJS-08 | P1: Reject | Tasks | Implementing |
 | PJS-09 | P1: Reject | Tasks | Implementing |
-| PJS-10 | P1: Reject | Design | Pending |
+| PJS-10 | P1: Reject | Tasks | Implementing |
 | PJS-11 | P1: Persist (malformed link → null + warning, lenient) | Tasks | Implementing |
 | PJS-12 | P2: List | Tasks | Implementing |
 | PJS-13 | P2: List | Tasks | Implementing |
