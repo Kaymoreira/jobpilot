@@ -150,6 +150,7 @@ T3 → T4 → T5 → T6
 **Gate**: full
 
 **Commit**: `feat(repository): add JobRepository port and sqlite adapter`
+**Status**: ✅ Complete (7 tests: 5 contract ×2 impls + 2 sqlite-only)
 
 ---
 
