@@ -21,6 +21,17 @@ def _oversized_json() -> bytes:
     return b'{"title":"A","company":"B","description":"' + b"x" * 60000 + b'"}'
 
 
+def _assert_too_large(payload: dict) -> None:
+    # detail must be a non-empty list matching the Pydantic 422 shape, not a
+    # bare string; the offending entry names the body and the too_large type.
+    detail = payload["detail"]
+    assert isinstance(detail, list) and detail
+    entry = detail[0]
+    assert entry["type"] == "too_large"
+    assert entry["loc"] == ["body"]
+    assert entry["msg"] == "request body too large"
+
+
 def test_oversized_body_is_rejected_422():
     client = make_client()
 
@@ -31,8 +42,9 @@ def test_oversized_body_is_rejected_422():
     )
 
     assert resp.status_code == 422
-    # Assert the guard rejected it, not a downstream validation/parse error.
-    assert resp.json()["detail"] == "request body too large"
+    # Assert the guard rejected it, not a downstream validation/parse error,
+    # and that detail is a non-empty list like every other 422 (spec PJS-10).
+    _assert_too_large(resp.json())
 
 
 def test_oversized_body_with_lying_small_content_length_is_still_rejected():
@@ -46,7 +58,7 @@ def test_oversized_body_with_lying_small_content_length_is_still_rejected():
 
     # The guard counts real bytes, so a small Content-Length does not slip it.
     assert resp.status_code == 422
-    assert resp.json()["detail"] == "request body too large"
+    _assert_too_large(resp.json())
 
 
 def test_oversized_body_streamed_in_chunks_is_rejected():
@@ -64,7 +76,7 @@ def test_oversized_body_streamed_in_chunks_is_rejected():
     )
 
     assert resp.status_code == 422
-    assert resp.json()["detail"] == "request body too large"
+    _assert_too_large(resp.json())
 
 
 def test_normal_paste_still_accepted():

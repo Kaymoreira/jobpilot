@@ -50,9 +50,19 @@ class BodySizeLimitMiddleware:
             total += len(message.get("body", b""))
             buffered.append(message)
             if total > self.max_bytes:
+                # Match the Pydantic 422 envelope: detail is a non-empty list,
+                # not a bare string, so clients parse every 422 the same way.
                 response = JSONResponse(
                     status_code=422,
-                    content={"detail": "request body too large"},
+                    content={
+                        "detail": [
+                            {
+                                "type": "too_large",
+                                "loc": ["body"],
+                                "msg": "request body too large",
+                            }
+                        ]
+                    },
                 )
                 await response(scope, receive, send)
                 return
