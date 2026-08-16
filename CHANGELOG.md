@@ -7,6 +7,16 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [Unreleased]
 
 ### Added
+- PastedJobSource (milestone M1): a canonical `Job` persisted to SQLite behind
+  a `JobRepository` port, exposed through the jobs endpoints:
+  - `POST /jobs` validates a pasted posting and persists it (`201`); blank or
+    missing required fields, over-cap `title`/`company` (> 512 chars), and
+    non-JSON bodies are rejected with `422` and nothing is persisted.
+  - `GET /jobs/{id}` reads a stored job back (`404` when unknown).
+  - `GET /jobs` lists stored jobs, newest first.
+- Request body-size limit (50 KB): oversized bodies are rejected with `422`
+  before parsing; the guard counts actual streamed bytes and ignores a
+  client-supplied `Content-Length`.
 - `CONTRIBUTING.md` documenting engineering standards (Conventional Commits,
   SemVer, testing philosophy, quality gates, Definition of Done).
 - This changelog.
