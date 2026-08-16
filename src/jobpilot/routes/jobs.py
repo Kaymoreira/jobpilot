@@ -6,11 +6,15 @@ fake or a failing repository. A storage failure surfaces as a 500 with a generic
 body so no internal detail (stack trace, SQL) leaks to the client.
 """
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import JSONResponse
 
 from jobpilot.models import Job, JobCreate
 from jobpilot.repository import JobRepository, RepositoryError
+
+logger = logging.getLogger("jobpilot")
 
 router = APIRouter()
 
@@ -27,6 +31,9 @@ def create_job(payload: JobCreate, repo: JobRepository = Depends(get_repository)
     try:
         return repo.add(job)
     except RepositoryError:
+        # Record the real cause (with traceback) server-side so the incident is
+        # diagnosable; the client still gets only the generic body below.
+        logger.exception("failed to persist job")
         return JSONResponse(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             content=INTERNAL_ERROR_BODY,

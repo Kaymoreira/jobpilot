@@ -6,6 +6,8 @@ path uses the contract-tested FakeJobRepository; the failure path uses a stub
 that raises to prove the 500 leaks nothing.
 """
 
+import logging
+
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
@@ -168,3 +170,19 @@ def test_repo_failure_returns_500_with_generic_body_and_no_leak():
         assert secret not in leaked
     # nothing persisted
     assert client.get("/jobs").json() == []
+
+
+def test_repo_failure_logs_internal_error_server_side(caplog):
+    client = make_client(repo=_FailingRepository())
+
+    with caplog.at_level(logging.ERROR, logger="jobpilot"):
+        resp = client.post("/jobs", json=VALID)
+
+    assert resp.status_code == 500
+    assert resp.json() == INTERNAL_ERROR_BODY
+    # The operator needs the real cause: it must be logged server-side, with the
+    # traceback (logger.exception), so incidents are diagnosable...
+    assert "failed to persist job" in caplog.text
+    assert "SELECT" in caplog.text
+    # ...while the same internal detail never reaches the client body.
+    assert "SELECT" not in resp.text
