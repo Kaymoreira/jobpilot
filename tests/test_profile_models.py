@@ -250,6 +250,11 @@ def test_location_value_object_is_accepted_and_trimmed():
     assert location.timezone is None
 
 
+def test_location_free_text_over_512_chars_is_rejected():
+    with pytest.raises(ValidationError):
+        Location(remote_preference="remote", base_location="x" * 513)
+
+
 # ---------------------------------------------------------------------------
 # T2: canonical Profile + new_from factory (BCP-01, BCP-02, BCP-06, BCP-18)
 # ---------------------------------------------------------------------------
