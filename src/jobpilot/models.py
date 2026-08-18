@@ -215,3 +215,32 @@ class ProfileCreate(BaseModel):
                 )
             seen.add(key)
         return self
+
+
+class Profile(ProfileCreate):
+    """The canonical persisted/returned profile.
+
+    Carries every normalized ``ProfileCreate`` field plus server-owned
+    ``created_at``/``updated_at``. Build instances with ``Profile.new_from`` so
+    those timestamps are always generated here: ``created_at`` is preserved from
+    the existing row on a replace, ``updated_at`` always advances.
+    """
+
+    created_at: datetime
+    updated_at: datetime
+
+    @classmethod
+    def new_from(
+        cls, data: ProfileCreate, *, created_at: datetime | None = None
+    ) -> "Profile":
+        now = datetime.now(UTC)
+        return cls(
+            skills=data.skills,
+            seniority=data.seniority,
+            years_experience=data.years_experience,
+            salary_expectation=data.salary_expectation,
+            location=data.location,
+            raw_cv=data.raw_cv,
+            created_at=created_at or now,
+            updated_at=now,
+        )

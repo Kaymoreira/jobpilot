@@ -5,10 +5,12 @@ Optional fields are tested by passing them explicitly (Lesson L-001): Pydantic v
 skips validators on defaulted fields, so omission would not exercise the branch.
 """
 
+from datetime import UTC, datetime, timedelta
+
 import pytest
 from pydantic import ValidationError
 
-from jobpilot.models import Location, ProfileCreate, SalaryRange
+from jobpilot.models import Location, Profile, ProfileCreate, SalaryRange
 
 # ---------------------------------------------------------------------------
 # skills normalization (BCP-03, BCP-09, BCP-14, BCP-19)
@@ -246,3 +248,85 @@ def test_location_value_object_is_accepted_and_trimmed():
     assert location.base_location == "Ilhéus/BA"
     assert location.open_to_international is True
     assert location.timezone is None
+
+
+# ---------------------------------------------------------------------------
+# T2: canonical Profile + new_from factory (BCP-01, BCP-02, BCP-06, BCP-18)
+# ---------------------------------------------------------------------------
+
+
+def _valid_create() -> ProfileCreate:
+    return ProfileCreate(skills=["k6"], seniority="pleno-senior")
+
+
+def test_new_from_sets_both_timestamps_as_timezone_aware_utc():
+    profile = Profile.new_from(_valid_create())
+
+    assert isinstance(profile.created_at, datetime)
+    assert isinstance(profile.updated_at, datetime)
+    assert profile.created_at.utcoffset() == timedelta(0)
+    assert profile.updated_at.utcoffset() == timedelta(0)
+
+
+def test_new_from_carries_all_normalized_fields():
+    data = ProfileCreate(
+        skills=[" k6 ", "K6", "playwright"],
+        seniority="senior",
+        years_experience=8,
+        raw_cv="  cv  ",
+    )
+
+    profile = Profile.new_from(data)
+
+    assert profile.skills == ["k6", "playwright"]
+    assert profile.seniority == "senior"
+    assert profile.years_experience == 8
+    assert profile.raw_cv == "cv"
+
+
+def test_new_from_replace_preserves_passed_created_at():
+    existing = datetime(2020, 1, 1, tzinfo=UTC)
+
+    profile = Profile.new_from(_valid_create(), created_at=existing)
+
+    assert profile.created_at == existing
+    assert profile.updated_at >= profile.created_at
+
+
+def test_new_from_first_create_uses_now_for_both():
+    before = datetime.now(UTC)
+
+    profile = Profile.new_from(_valid_create())
+
+    assert profile.created_at >= before
+    assert profile.updated_at >= profile.created_at
+
+
+def test_two_new_from_calls_advance_updated_at_monotonically():
+    first = Profile.new_from(_valid_create())
+    second = Profile.new_from(_valid_create())
+
+    assert second.updated_at >= first.updated_at
+
+
+def test_caller_supplied_timestamps_on_create_are_ignored():
+    data = ProfileCreate(
+        skills=["k6"],
+        seniority="pleno",
+        created_at="1999-01-01",
+        updated_at="1999-01-01",
+    )
+
+    profile = Profile.new_from(data)
+
+    assert profile.created_at.year != 1999
+    assert profile.updated_at.year != 1999
+
+
+def test_new_from_preserves_unicode_and_emoji():
+    data = ProfileCreate(skills=["k6 🚀", "Señor QE"], seniority="pleno", raw_cv="Açaí ✨")
+
+    profile = Profile.new_from(data)
+
+    assert profile.skills == ["k6 🚀", "Señor QE"]
+    assert profile.raw_cv == "Açaí ✨"
