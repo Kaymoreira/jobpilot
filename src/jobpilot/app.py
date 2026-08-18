@@ -14,8 +14,9 @@ from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from jobpilot import __version__
-from jobpilot.repository import SqliteJobRepository
+from jobpilot.repository import SqliteJobRepository, SqliteProfileRepository
 from jobpilot.routes.jobs import router as jobs_router
+from jobpilot.routes.profile import router as profile_router
 
 DEFAULT_DB_PATH = "jobpilot.db"
 MAX_BODY_BYTES = 50 * 1024
@@ -94,6 +95,7 @@ def create_app(db_path: str | None = None) -> FastAPI:
     path = db_path or os.environ.get("JOBPILOT_DB", DEFAULT_DB_PATH)
     conn = sqlite3.connect(path, check_same_thread=False)
     app.state.repo = SqliteJobRepository(conn)
+    app.state.profile_repo = SqliteProfileRepository(conn)
 
     app.add_middleware(BodySizeLimitMiddleware)
 
@@ -102,6 +104,7 @@ def create_app(db_path: str | None = None) -> FastAPI:
         return {"status": "ok", "version": __version__}
 
     app.include_router(jobs_router)
+    app.include_router(profile_router)
 
     return app
 
