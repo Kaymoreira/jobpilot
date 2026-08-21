@@ -20,6 +20,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `CONTRIBUTING.md` documenting engineering standards (Conventional Commits,
   SemVer, testing philosophy, quality gates, Definition of Done).
 - This changelog.
+- Base CV / structured profile (milestone M2): a single canonical `Profile`
+  (skills, seniority, optional salary expectation, location, years of experience,
+  and verbatim raw CV) persisted to SQLite behind a `ProfileRepository` port,
+  exposed through the profile endpoints:
+  - `PUT /profile` authors or fully replaces the profile: `201` on first author,
+    `200` on replace with the original `created_at` preserved and `updated_at`
+    advanced. Skills are trimmed, blank-dropped, and de-duplicated
+    case-insensitively (first-seen order) before persisting.
+  - `GET /profile` reads the stored profile back; the empty state returns `404`
+    (never a hollow `200`), so a downstream Matcher cannot mistake absence for a
+    matchable profile.
+  - Invalid profiles are rejected with `422` and persist nothing: no/blank
+    skills, missing or bad `seniority` (closed enum), a salary range violating
+    `0 < floor ≤ target ≤ ceiling`, a duplicate `(currency, contract)` pair,
+    `years_experience` outside `0..60`, over-cap fields, and non-JSON/oversized
+    bodies. Raw CV is stored verbatim, never parsed.
+  - A persistence failure returns `500` with a generic body (no SQL or stack
+    trace leaked) while the real cause is logged server-side.
 
 ## [0.1.0] - 2026-08-10
 

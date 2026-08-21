@@ -1,11 +1,12 @@
-"""Test doubles for the JobRepository port.
+"""Test doubles for the repository ports.
 
-`FakeJobRepository` is an in-memory stand-in used by the route tests. It is held
-to the same behavior as the real adapter by the parametrized contract test in
-`test_repository.py`, so route tests cannot pass against a fiction.
+`FakeJobRepository` and `FakeProfileRepository` are in-memory stand-ins used by
+the route tests. Each is held to the same behavior as its real sqlite adapter by
+the parametrized repository contract tests (`test_repository.py` and
+`test_profile_repository.py`), so route tests cannot pass against a fiction.
 """
 
-from jobpilot.models import Job
+from jobpilot.models import Job, Profile
 
 
 class FakeJobRepository:
@@ -23,3 +24,17 @@ class FakeJobRepository:
 
     def list_all(self) -> list[Job]:
         return list(reversed(self._jobs))
+
+
+class FakeProfileRepository:
+    """In-memory ProfileRepository. Single-row, mirrors the sqlite adapter."""
+
+    def __init__(self) -> None:
+        self._profile: Profile | None = None
+
+    def get(self) -> Profile | None:
+        return self._profile
+
+    def upsert(self, profile: Profile) -> Profile:
+        self._profile = profile
+        return profile
