@@ -7,6 +7,8 @@ whose upsert raises, to prove the 500 leaks nothing and the prior state stands.
 """
 
 import logging
+from datetime import UTC, datetime
+from unittest.mock import patch
 
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -58,16 +60,27 @@ def test_put_create_returns_201_with_server_timestamps():
 def test_second_put_returns_200_preserving_created_at_and_advancing_updated_at():
     client = make_client()
 
-    created = client.put("/profile", json=VALID).json()
-    replaced = client.put(
-        "/profile", json={"skills": ["cypress"], "seniority": "senior"}
-    )
+    # Control the clock so create and replace get distinct timestamps: a real
+    # replace must advance updated_at, so we can assert a *strict* increase. With
+    # the wall clock the two writes could land in the same microsecond, letting a
+    # mutant that freezes updated_at slip through a `>=` assertion.
+    t_create = datetime(2026, 8, 20, 12, 0, 0, tzinfo=UTC)
+    t_replace = datetime(2026, 8, 20, 12, 0, 5, tzinfo=UTC)
+    with patch("jobpilot.models.datetime") as clock:
+        clock.now.side_effect = [t_create, t_replace]
+        created = client.put("/profile", json=VALID).json()
+        replaced = client.put(
+            "/profile", json={"skills": ["cypress"], "seniority": "senior"}
+        )
 
     assert replaced.status_code == 200
     body = replaced.json()
     assert body["skills"] == ["cypress"]
+    # created_at is pinned to the first write; updated_at strictly advances.
     assert body["created_at"] == created["created_at"]
-    assert body["updated_at"] >= created["updated_at"]
+    assert datetime.fromisoformat(body["created_at"]) == t_create
+    assert datetime.fromisoformat(body["updated_at"]) == t_replace
+    assert body["updated_at"] > created["updated_at"]
 
 
 def test_get_before_any_put_returns_404():
