@@ -1,0 +1,26 @@
+meta {
+  name: Create job - blank title
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/jobs
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "   ",
+    "company": "Acme Corp"
+  }
+}
+
+docs {
+  `title` is whitespace-only, which the boundary validator rejects (must not be
+  blank).
+
+  Expected: 422 Unprocessable Entity
+  Body: Pydantic envelope, detail is a non-empty list.
+}

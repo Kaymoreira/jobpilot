@@ -1,0 +1,25 @@
+meta {
+  name: Upsert profile - no skills
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/profile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skills": ["   ", ""],
+    "seniority": "pleno"
+  }
+}
+
+docs {
+  All skills are blank, so after normalization the list is empty. The boundary
+  requires at least one non-blank skill.
+
+  Expected: 422 Unprocessable Entity
+}

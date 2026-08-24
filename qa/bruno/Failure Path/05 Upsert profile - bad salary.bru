@@ -1,0 +1,35 @@
+meta {
+  name: Upsert profile - bad salary
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/profile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skills": ["Python"],
+    "seniority": "pleno",
+    "salary_expectation": [
+      {
+        "currency": "BRL",
+        "contract": "PJ",
+        "floor": 18000,
+        "target": 15000,
+        "ceiling": 12000
+      }
+    ]
+  }
+}
+
+docs {
+  The salary range violates `0 < floor <= target <= ceiling` (floor > ceiling).
+  Rejecting this prevents the Matcher (M3) from reading the range as
+  "any salary ok" (fail-open).
+
+  Expected: 422 Unprocessable Entity
+}
