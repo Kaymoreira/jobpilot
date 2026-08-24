@@ -70,11 +70,10 @@ been created yet.
 - `Get job - not found` → 404
 - `Get profile - not found` → 404
 - `Create job - blank title` → 422
-- `Create job - oversized body` → 422 **only after** you paste 50 KB+ into the
-  `description` field. The committed body is a small placeholder (returns 201 as
-  shipped); this case is already covered by the automated pytest suite
-  (`tests/test_body_limit.py`), so exercising it here is optional. See the
-  request's `docs` tab.
+- `Create job - oversized body` → 422. A pre-request script generates a
+  60000-char body at send time (no large literal committed to the repo), so you
+  just send it as-is. Also covered by the automated pytest suite
+  (`tests/test_body_limit.py`). See the request's `docs` tab.
 - `Upsert profile - no skills` → 422
 - `Upsert profile - bad salary` → 422
 

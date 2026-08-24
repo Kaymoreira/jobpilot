@@ -10,11 +10,17 @@ post {
   auth: none
 }
 
+script:pre-request {
+  // Build a >50 KB body at send time so no large literal is committed to the
+  // repo. 60000 chars keeps the body comfortably over MAX_BODY_BYTES (51200).
+  bru.setVar("oversizedDescription", "x".repeat(60000));
+}
+
 body:json {
   {
     "title": "Oversized",
     "company": "Acme Corp",
-    "description": "REPLACE ME with 50 KB+ of text to trip the body-size limit"
+    "description": "{{oversizedDescription}}"
   }
 }
 
@@ -23,15 +29,15 @@ docs {
   (MAX_BODY_BYTES = 51200 bytes) before it is parsed, counting the actual bytes
   streamed rather than trusting Content-Length.
 
-  The body shipped here is a small placeholder, so as-is this request returns
-  201, not 422. To trigger the 422 manually, paste 50 KB or more into the
-  `description` field (e.g. duplicate a paragraph until the body exceeds 50 KB)
-  and send again.
+  To trip the guard without committing a large literal to the repo, the
+  pre-request script generates a 60000-char string at send time and stores it in
+  the runtime var `oversizedDescription`, which the body references via
+  `{{oversizedDescription}}`. Just send the request as-is.
 
   Expected (body > 50 KB): 422 Unprocessable Entity
   Body: Pydantic-shaped envelope, detail[0].type = "too_large".
 
-  This case is already covered by the automated pytest suite
+  This case is also covered by the automated pytest suite
   (tests/test_body_limit.py), including the streamed-in-chunks and
-  lying-Content-Length variants, so exercising it here manually is optional.
+  lying-Content-Length variants.
 }
