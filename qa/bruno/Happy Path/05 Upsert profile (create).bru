@@ -1,0 +1,45 @@
+meta {
+  name: Upsert profile (create)
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/profile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skills": ["Python", "Playwright", "SQL"],
+    "seniority": "pleno-senior",
+    "years_experience": 5,
+    "salary_expectation": [
+      {
+        "currency": "BRL",
+        "contract": "PJ",
+        "floor": 12000,
+        "target": 15000,
+        "ceiling": 18000
+      }
+    ],
+    "location": {
+      "remote_preference": "remote",
+      "open_to_international": true,
+      "base_location": "Ilheus, BA",
+      "timezone": "America/Bahia"
+    },
+    "raw_cv": "Kayque Moreira - Quality Engineer. 5 years of experience."
+  }
+}
+
+docs {
+  Create-or-replace of the single candidate profile.
+
+  Run this FIRST, against a fresh database (no profile yet), to see the create
+  path.
+
+  Expected (first author): 201 Created
+  Body: canonical Profile with server-owned created_at and updated_at.
+}
