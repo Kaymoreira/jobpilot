@@ -1,0 +1,37 @@
+meta {
+  name: Create job - oversized body
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/jobs
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "Oversized",
+    "company": "Acme Corp",
+    "description": "REPLACE ME with 50 KB+ of text to trip the body-size limit"
+  }
+}
+
+docs {
+  The BodySizeLimitMiddleware rejects any request body over 50 KB
+  (MAX_BODY_BYTES = 51200 bytes) before it is parsed, counting the actual bytes
+  streamed rather than trusting Content-Length.
+
+  The body shipped here is a small placeholder, so as-is this request returns
+  201, not 422. To trigger the 422 manually, paste 50 KB or more into the
+  `description` field (e.g. duplicate a paragraph until the body exceeds 50 KB)
+  and send again.
+
+  Expected (body > 50 KB): 422 Unprocessable Entity
+  Body: Pydantic-shaped envelope, detail[0].type = "too_large".
+
+  This case is already covered by the automated pytest suite
+  (tests/test_body_limit.py), including the streamed-in-chunks and
+  lying-Content-Length variants, so exercising it here manually is optional.
+}

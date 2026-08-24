@@ -1,0 +1,18 @@
+meta {
+  name: List jobs
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/jobs
+  body: none
+  auth: none
+}
+
+docs {
+  Lists all stored jobs.
+
+  Expected: 200 OK
+  Body: JSON array of Job (empty array if none created yet).
+}

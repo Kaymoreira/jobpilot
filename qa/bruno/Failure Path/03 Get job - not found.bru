@@ -1,0 +1,17 @@
+meta {
+  name: Get job - not found
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/jobs/does-not-exist
+  body: none
+  auth: none
+}
+
+docs {
+  Requests a job id that was never created.
+
+  Expected: 404 Not Found
+}

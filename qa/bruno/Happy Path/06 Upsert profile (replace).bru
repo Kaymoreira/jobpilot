@@ -1,0 +1,27 @@
+meta {
+  name: Upsert profile (replace)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/profile
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "skills": ["Python", "Playwright", "SQL", "Bruno"],
+    "seniority": "senior",
+    "years_experience": 6
+  }
+}
+
+docs {
+  Replaces the existing profile. Run this AFTER "Upsert profile (create)".
+
+  Expected (profile already exists): 200 OK
+  Body: canonical Profile. created_at is preserved from the first author;
+  updated_at advances.
+}

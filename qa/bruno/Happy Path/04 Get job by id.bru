@@ -1,0 +1,25 @@
+meta {
+  name: Get job by id
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/jobs/{{jobId}}
+  body: none
+  auth: none
+}
+
+vars:pre-request {
+  jobId: paste-an-existing-job-id-here
+}
+
+docs {
+  Fetches a single job by id.
+
+  Set the `jobId` variable above to an id returned by "Create job" (or by
+  "List jobs"). The default placeholder value will return 404 until replaced.
+
+  Expected (existing id): 200 OK
+  Body: the canonical Job.
+}

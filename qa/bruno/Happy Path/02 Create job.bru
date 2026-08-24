@@ -1,0 +1,30 @@
+meta {
+  name: Create job
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/jobs
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "title": "QA Engineer",
+    "company": "Acme Corp",
+    "description": "We are hiring a QA engineer to own quality on our platform.",
+    "requirements": ["Python", "API testing", "CI/CD"],
+    "link": "https://acme.example.com/jobs/qa-engineer"
+  }
+}
+
+docs {
+  Creates a job from a pasted posting.
+
+  Expected: 201 Created
+  Body: canonical Job, with server-owned id, source="pasted" and created_at.
+
+  Copy the returned id into the "Get job by id" request (Happy Path).
+}

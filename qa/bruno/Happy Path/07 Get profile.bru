@@ -1,0 +1,18 @@
+meta {
+  name: Get profile
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/profile
+  body: none
+  auth: none
+}
+
+docs {
+  Reads the single candidate profile. Run AFTER a profile has been created.
+
+  Expected (profile exists): 200 OK
+  Body: the canonical Profile.
+}
