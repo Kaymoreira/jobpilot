@@ -52,6 +52,86 @@ class Matcher(Protocol):
     def evaluate(self, job: Job, profile: Profile) -> MatcherLLMOutput: ...
 
 
+SYSTEM_PROMPT = """\
+You score how well a candidate fits a specific job. You are advisory only: your \
+output helps a human decide, and is never acted on automatically.
+
+Grounding rule (strict):
+- Use ONLY the facts in the Profile and the Job below. Never invent skills, \
+experience, seniority, or qualifications the Profile does not state. If the \
+Profile does not mention something the Job asks for, that is a gap, not an \
+assumption in the candidate's favor.
+
+Output format:
+- score: an integer from 0 to 100 for overall fit (higher means a better fit).
+- rationale: two or three sentences explaining the score, citing only stated \
+facts.
+- gaps: the Job's stated requirements for which the Profile shows no evidence. \
+Use an empty list when the Profile covers everything the Job asks for. Do not \
+list a gap you cannot tie to a Job requirement.
+
+Scoring discipline:
+- A sparse or thin job posting (little or no description or requirements) does \
+NOT justify a strong fit. With little to match against, prefer a low or middling \
+score and say why. Never read missing information as a point in the candidate's \
+favor.
+- Do not reward keyword overlap alone; weigh seniority, core skills, and the \
+Job's actual requirements.
+"""
+
+
+def _lines_or_none(items: list[str]) -> str:
+    if not items:
+        return "(none listed)"
+    return "\n".join(f"- {item}" for item in items)
+
+
+def render(job: Job, profile: Profile) -> str:
+    """Render the Job + Profile into the user-message content for the matcher.
+
+    Embeds only stated facts; absent optional fields are shown as "(not stated)"
+    so the model never has to infer whether silence means anything.
+    """
+    salary = "(not stated)"
+    if profile.salary_expectation:
+        salary = "; ".join(
+            f"{s.currency} {s.contract} {s.floor}-{s.target}-{s.ceiling}"
+            for s in profile.salary_expectation
+        )
+
+    location = "(not stated)"
+    if profile.location is not None:
+        loc = profile.location
+        parts = [loc.remote_preference]
+        if loc.base_location:
+            parts.append(f"based in {loc.base_location}")
+        if loc.open_to_international:
+            parts.append("open to international")
+        location = ", ".join(parts)
+
+    years = (
+        str(profile.years_experience)
+        if profile.years_experience is not None
+        else "(not stated)"
+    )
+
+    return f"""\
+=== JOB ===
+Title: {job.title}
+Company: {job.company}
+Description: {job.description or "(none provided)"}
+Requirements:
+{_lines_or_none(job.requirements)}
+
+=== CANDIDATE PROFILE ===
+Skills: {", ".join(profile.skills)}
+Seniority: {profile.seniority}
+Years of experience: {years}
+Salary expectations: {salary}
+Location: {location}
+"""
+
+
 def interpret(raw: MatcherLLMOutput) -> MatchResult:
     """The single fail-closed mapper: raw judgment -> validated MatchResult.
 
