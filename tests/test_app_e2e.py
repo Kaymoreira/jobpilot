@@ -8,12 +8,14 @@ echoed back from the POST response.
 from fastapi.testclient import TestClient
 
 from jobpilot.app import create_app
+from jobpilot.matching import AnthropicMatcher, MatcherError, MatcherLLMOutput
 from jobpilot.routes.jobs import INTERNAL_ERROR_BODY, get_repository
+from jobpilot.routes.matcher import get_matcher
 from jobpilot.routes.profile import (
     INTERNAL_ERROR_BODY as PROFILE_INTERNAL_ERROR_BODY,
     get_profile_repository,
 )
-from tests.fakes import FakeJobRepository, FakeProfileRepository
+from tests.fakes import FakeJobRepository, FakeMatcher, FakeProfileRepository
 
 
 class _FailingRepository(FakeJobRepository):
@@ -194,3 +196,85 @@ def test_profile_repo_failure_returns_500_and_persists_nothing_e2e():
     assert resp.status_code == 500
     assert resp.json() == PROFILE_INTERNAL_ERROR_BODY
     assert client.get("/profile").status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Matcher (M3) end-to-end over the real sqlite stack (matcher faked, no network)
+# ---------------------------------------------------------------------------
+
+
+def _match_client(matcher, monkeypatch) -> TestClient:
+    # Prove startup needs no API key: build the app with the var unset.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    app = create_app(db_path=":memory:")
+    app.dependency_overrides[get_matcher] = lambda: matcher
+    return TestClient(app)
+
+
+def test_app_wires_a_key_free_anthropic_matcher(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    app = create_app(db_path=":memory:")
+
+    # Constructed lazily — no client built, no key touched at startup.
+    assert isinstance(app.state.matcher, AnthropicMatcher)
+
+
+def test_match_decides_over_the_real_stack(monkeypatch):
+    matcher = FakeMatcher(
+        MatcherLLMOutput(score=82, rationale="strong overlap", gaps=["AWS"])
+    )
+    client = _match_client(matcher, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA Engineer", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+
+    resp = client.post(f"/jobs/{job['id']}/match")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["score"] == 82
+    assert body["verdict"] == "strong"
+
+
+def test_match_on_store_without_profile_returns_cannot_assess(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=90, rationale="unused"))
+    client = _match_client(matcher, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+
+    resp = client.post(f"/jobs/{job['id']}/match")
+
+    assert resp.status_code == 200
+    assert resp.json()["verdict"] == "cannot_assess"
+    assert matcher.evaluate_called is False
+
+
+def test_match_unknown_job_returns_404_e2e(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=50, rationale="unused"))
+    client = _match_client(matcher, monkeypatch)
+
+    assert client.post("/jobs/nope/match").status_code == 404
+
+
+def test_match_writes_nothing_to_the_store(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=60, rationale="ok"))
+    client = _match_client(matcher, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+    job_before = client.get(f"/jobs/{job['id']}").json()
+    profile_before = client.get("/profile").json()
+
+    client.post(f"/jobs/{job['id']}/match")
+
+    assert client.get(f"/jobs/{job['id']}").json() == job_before
+    assert client.get("/profile").json() == profile_before
+
+
+def test_matcher_failure_fails_closed_e2e(monkeypatch):
+    matcher = FakeMatcher(error=MatcherError("provider down"))
+    client = _match_client(matcher, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+
+    resp = client.post(f"/jobs/{job['id']}/match")
+
+    assert resp.status_code == 200
+    assert resp.json()["verdict"] == "cannot_assess"
