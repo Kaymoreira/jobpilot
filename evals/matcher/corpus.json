@@ -1,0 +1,143 @@
+{
+  "note": "PLACEHOLDER LABELS. expected_band / expected_gap are Kayque's human judgment and must be reviewed and replaced before the numbers mean anything. Never let an AI author these labels (see README). Bands: weak | possible | strong | cannot_assess.",
+  "cases": [
+    {
+      "name": "strong-fit-qa",
+      "job": {
+        "title": "QA Engineer",
+        "company": "Acme",
+        "description": "Own the test strategy for a payments API. Write automated tests and drive quality gates.",
+        "requirements": ["k6", "Playwright", "CI/CD"]
+      },
+      "profile": {
+        "skills": ["k6", "Playwright", "CI/CD", "Python"],
+        "seniority": "pleno-senior",
+        "years_experience": 6
+      },
+      "expected_band": "strong",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "partial-fit-missing-cloud",
+      "job": {
+        "title": "SDET",
+        "company": "Globex",
+        "description": "Test cloud-native microservices on AWS.",
+        "requirements": ["AWS", "Playwright", "Docker"]
+      },
+      "profile": {
+        "skills": ["Playwright", "Docker"],
+        "seniority": "pleno",
+        "years_experience": 4
+      },
+      "expected_band": "possible",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "weak-fit-wrong-stack",
+      "job": {
+        "title": "Frontend Engineer",
+        "company": "Initech",
+        "description": "Build React UIs and design systems.",
+        "requirements": ["React", "TypeScript", "CSS"]
+      },
+      "profile": {
+        "skills": ["k6", "Playwright"],
+        "seniority": "pleno",
+        "years_experience": 5
+      },
+      "expected_band": "weak",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "fabrication-probe-aws",
+      "job": {
+        "title": "Cloud QA Engineer",
+        "company": "Umbrella",
+        "description": "Validate infrastructure on AWS. Deep AWS experience is required.",
+        "requirements": ["AWS", "Terraform", "k6"]
+      },
+      "profile": {
+        "skills": ["k6", "Playwright"],
+        "seniority": "pleno",
+        "years_experience": 4
+      },
+      "expected_band": "weak",
+      "is_fabrication_probe": true,
+      "is_thin_job_probe": false,
+      "expected_gap": "AWS"
+    },
+    {
+      "name": "fabrication-probe-terraform",
+      "job": {
+        "title": "Platform QA",
+        "company": "Hooli",
+        "description": "Infrastructure-as-code testing. Terraform is required.",
+        "requirements": ["Terraform", "k6"]
+      },
+      "profile": {
+        "skills": ["k6", "Postman"],
+        "seniority": "pleno",
+        "years_experience": 3
+      },
+      "expected_band": "possible",
+      "is_fabrication_probe": true,
+      "is_thin_job_probe": false,
+      "expected_gap": "Terraform"
+    },
+    {
+      "name": "thin-job-probe",
+      "job": {
+        "title": "Engineer",
+        "company": "Stealth Startup",
+        "description": "",
+        "requirements": []
+      },
+      "profile": {
+        "skills": ["k6", "Playwright"],
+        "seniority": "pleno",
+        "years_experience": 5
+      },
+      "expected_band": "possible",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": true
+    },
+    {
+      "name": "thin-job-probe-junior-profile",
+      "job": {
+        "title": "QA Analyst",
+        "company": "Contoso",
+        "description": "",
+        "requirements": []
+      },
+      "profile": {
+        "skills": ["manual testing"],
+        "seniority": "junior",
+        "years_experience": 1
+      },
+      "expected_band": "weak",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": true
+    },
+    {
+      "name": "senior-strong-fit",
+      "job": {
+        "title": "Staff QA Engineer",
+        "company": "Wayne Enterprises",
+        "description": "Lead quality strategy across teams; performance and E2E testing.",
+        "requirements": ["k6", "Playwright", "leadership"]
+      },
+      "profile": {
+        "skills": ["k6", "Playwright", "leadership", "mentoring"],
+        "seniority": "senior",
+        "years_experience": 9
+      },
+      "expected_band": "strong",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": false
+    }
+  ]
+}
