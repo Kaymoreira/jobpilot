@@ -130,6 +130,21 @@ Handoff is the single most-recent snapshot.
   through one mutation-tested function, and the `FakeMatcher` can simulate every
   case offline. `MatchResult` `model_validator` makes the contract structural
   (score↔verdict↔gaps↔null), a natural mutation target. _2026-08-25_
+- **AD-024 — Matcher scoring philosophy: weigh the core, discount the tail, keep
+  gaps honest.** The `SYSTEM_PROMPT` instructs the model to (a) weigh CORE
+  requirements far more than nice-to-haves — a candidate strong on the core still
+  scores well with a few peripheral skills missing, never tanked over minor gaps;
+  (b) treat long, kitchen-sink requirement lists with skepticism (postings list
+  stacks they don't actually use, so missing a few tail items is weak evidence of
+  a poor fit); (c) keep listing gaps honestly and completely regardless of score —
+  gaps are informational for the human + the M4 tailoring step, never a rejection.
+  The existing thin-job discipline (sparse posting ≠ strong fit) stays. Rationale:
+  a matcher that punishes every missing keyword is its own fail-open failure — it
+  discards good candidates and makes the gap list a verdict instead of a signal.
+  Also (AD-024b): `render()` now includes the Profile's verbatim `raw_cv` (the M2
+  source of truth) so a skill stated only in CV prose is not flagged as a false
+  gap. Verified by prompt/render unit tests + a `core-fit-minor-gaps` eval probe
+  (placeholder label). _2026-08-31_
 
 ## Handoff
 

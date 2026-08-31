@@ -38,6 +38,25 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     bodies. Raw CV is stored verbatim, never parsed.
   - A persistence failure returns `500` with a generic body (no SQL or stack
     trace leaked) while the real cause is logged server-side.
+- Matcher (milestone M3): the first LLM-backed component, scoring a stored `Job`
+  against the stored `Profile` behind a `Matcher` port, exposed through the match
+  endpoint:
+  - `POST /jobs/{job_id}/match` returns an advisory `MatchResult` (a `0..100`
+    score, a `strong`/`possible`/`weak`/`cannot_assess` verdict derived from
+    score bands, grounded `gaps`, and a bounded `rationale`). The call is
+    synchronous, ephemeral, and side-effect-free: a match writes nothing.
+  - Fail-closed on every uncertainty: an absent profile, an LLM error/timeout,
+    a refusal, a truncated or unparseable response, or an out-of-range score all
+    resolve to `cannot_assess` with `score = null` (never clamped, never a high
+    score). An unknown `job_id` is `404`; a storage read failure is a generic
+    `500` (never a verdict). The real cause of a failure is logged server-side.
+  - The LLM sits behind a port, so the suite runs offline against a fake; an
+    offline, non-gating eval harness (`evals/matcher/`) measures the real model
+    against a human-labeled corpus.
+- New runtime dependency: `anthropic` (>= 1.2), the official SDK used by the
+  Matcher adapter (`claude-opus-4-8` via structured `messages.parse`, single
+  attempt with `max_retries=0` and a bounded timeout). The client is built
+  lazily, so the app imports and starts with no `ANTHROPIC_API_KEY` set.
 
 ## [0.1.0] - 2026-08-10
 

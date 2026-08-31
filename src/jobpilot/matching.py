@@ -58,10 +58,12 @@ You score how well a candidate fits a specific job. You are advisory only: your 
 output helps a human decide, and is never acted on automatically.
 
 Grounding rule (strict):
-- Use ONLY the facts in the Profile and the Job below. Never invent skills, \
-experience, seniority, or qualifications the Profile does not state. If the \
-Profile does not mention something the Job asks for, that is a gap, not an \
-assumption in the candidate's favor.
+- Use ONLY the facts in the Profile and the Job below. The Profile is BOTH the \
+structured fields AND the candidate's raw CV text; a skill or experience stated \
+only in the CV prose still counts, so do not flag it as a gap. Never invent \
+skills, experience, seniority, or qualifications the Profile does not contain. \
+If the Job asks for something the Profile mentions nowhere, that is a gap, not \
+an assumption in the candidate's favor.
 
 Output format:
 - score: an integer from 0 to 100 for overall fit (higher means a better fit).
@@ -72,12 +74,23 @@ Use an empty list when the Profile covers everything the Job asks for. Do not \
 list a gap you cannot tie to a Job requirement.
 
 Scoring discipline:
+- Weigh CORE requirements far more than nice-to-haves. A candidate who is strong \
+on the core of the role should still score well with a few peripheral or \
+secondary skills missing. Do not tank the score over a handful of minor gaps.
+- Treat long requirement lists with skepticism: postings routinely list entire \
+stacks they do not actually use day to day, so missing a few items from a long, \
+kitchen-sink list is weak evidence of a poor fit.
 - A sparse or thin job posting (little or no description or requirements) does \
 NOT justify a strong fit. With little to match against, prefer a low or middling \
 score and say why. Never read missing information as a point in the candidate's \
 favor.
 - Do not reward keyword overlap alone; weigh seniority, core skills, and the \
 Job's actual requirements.
+
+Gaps are informational, not a verdict:
+- List gaps honestly and completely regardless of the score. They inform the \
+human reviewer and the downstream tailoring step; a gap is never itself a reason \
+to reject. A candidate can score well and still have listed gaps.
 """
 
 
@@ -130,6 +143,7 @@ Seniority: {profile.seniority}
 Years of experience: {years}
 Salary expectations: {salary}
 Location: {location}
+CV (verbatim): {profile.raw_cv or "(not stated)"}
 """
 
 
@@ -193,11 +207,21 @@ class AnthropicMatcher:
                 thinking={"type": "adaptive"},
                 output_config={"effort": self.effort},
             )
-        except (anthropic.APIError, ValidationError) as exc:
+            stop_reason = response.stop_reason
+            parsed = response.parsed_output
+        except (anthropic.AnthropicError, ValidationError) as exc:
+            # AnthropicError is the SDK's root (covers APIError, APITimeoutError,
+            # APIConnectionError, ...); ValidationError is a structured-output
+            # parse failure. Both fail closed.
             raise MatcherError("the matcher call failed") from exc
-        if response.stop_reason in {"refusal", "max_tokens"}:
-            raise MatcherError(f"unusable stop reason: {response.stop_reason}")
-        parsed = response.parsed_output
+        except Exception as exc:  # noqa: BLE001
+            # Adapter boundary: this is where a non-deterministic dependency is
+            # translated into a domain contract. Any other fault (an undeclared
+            # SDK error, an unexpected response shape) must fail closed too, never
+            # escape as an unhandled 500.
+            raise MatcherError("unexpected matcher failure") from exc
+        if stop_reason in {"refusal", "max_tokens"}:
+            raise MatcherError(f"unusable stop reason: {stop_reason}")
         if parsed is None:
             raise MatcherError("the model returned no parsed output")
         return parsed

@@ -23,9 +23,10 @@ Before trusting any number:
    `cannot_assess`) from **your own** judgment as a QA.
 2. **Never let an AI label these cases** — the whole point is to check the model
    against a human, so an AI-authored label defeats the eval.
-3. Keep the two probe kinds: at least one `is_fabrication_probe` (job needs a
-   skill the profile lacks — set its `expected_gap`) and one
-   `is_thin_job_probe` (title/company only).
+3. Keep the probe kinds: at least one `is_fabrication_probe` (job needs a skill
+   the profile lacks — set its `expected_gap`), one `is_thin_job_probe`
+   (title/company only), and one `is_core_fit_probe` (strong on the core with a
+   few peripheral gaps — should still score reasonably, not `weak`/`cannot_assess`).
 
 ## What it reports
 

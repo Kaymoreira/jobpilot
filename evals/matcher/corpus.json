@@ -138,6 +138,33 @@
       "expected_band": "strong",
       "is_fabrication_probe": false,
       "is_thin_job_probe": false
+    },
+    {
+      "name": "core-fit-minor-gaps-probe",
+      "job": {
+        "title": "Senior QA Engineer",
+        "company": "Cyberdyne",
+        "description": "Own performance and E2E testing for a payments platform.",
+        "requirements": [
+          "k6",
+          "Playwright",
+          "CI/CD",
+          "Grafana",
+          "Kubernetes",
+          "Go",
+          "GraphQL",
+          "Kafka"
+        ]
+      },
+      "profile": {
+        "skills": ["k6", "Playwright", "CI/CD", "Python"],
+        "seniority": "senior",
+        "years_experience": 8
+      },
+      "expected_band": "strong",
+      "is_fabrication_probe": false,
+      "is_thin_job_probe": false,
+      "is_core_fit_probe": true
     }
   ]
 }

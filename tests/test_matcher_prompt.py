@@ -23,6 +23,7 @@ def _full_profile() -> Profile:
                 )
             ],
             location=Location(remote_preference="remote", base_location="Ilhéus/BA"),
+            raw_cv="Led k6 performance testing and Terraform IaC at Acme.",
         )
     )
 
@@ -53,6 +54,26 @@ def test_system_prompt_cautions_against_scoring_thin_jobs_strong():
 
     assert "sparse" in lowered or "thin" in lowered or "little" in lowered
     assert "strong" in lowered
+
+
+def test_system_prompt_weighs_core_over_peripheral_skills():
+    lowered = SYSTEM_PROMPT.lower()
+
+    assert "core" in lowered
+    assert "nice-to-have" in lowered or "peripheral" in lowered
+
+
+def test_system_prompt_is_skeptical_of_long_requirement_lists():
+    lowered = SYSTEM_PROMPT.lower()
+
+    assert "skepticism" in lowered or "skeptic" in lowered or "do not actually use" in lowered
+
+
+def test_system_prompt_treats_gaps_as_informational_not_rejection():
+    lowered = SYSTEM_PROMPT.lower()
+
+    assert "informational" in lowered
+    assert "reject" in lowered
 
 
 # ---------------------------------------------------------------------------
@@ -87,6 +108,27 @@ def test_render_embeds_profile_skills_and_seniority():
     assert "k6" in rendered
     assert "Playwright" in rendered
     assert "pleno-senior" in rendered
+
+
+def test_render_embeds_raw_cv_so_cv_only_skills_are_visible():
+    job = Job.new_from(JobCreate(title="QA Engineer", company="Acme"))
+
+    rendered = render(job, _full_profile())
+
+    # The verbatim CV is the M2 source of truth; a skill stated only in the CV
+    # prose (Terraform, absent from the structured skills list) must reach the
+    # model so it is not flagged as a false gap.
+    assert "Led k6 performance testing and Terraform IaC at Acme." in rendered
+    assert "Terraform" in rendered
+
+
+def test_render_without_raw_cv_marks_it_not_stated():
+    job = Job.new_from(JobCreate(title="QA Engineer", company="Acme"))
+    profile = Profile.new_from(ProfileCreate(skills=["k6"], seniority="junior"))
+
+    rendered = render(job, profile)
+
+    assert "(not stated)" in rendered
 
 
 def test_render_thin_job_produces_text_without_inventing_content():

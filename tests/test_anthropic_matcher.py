@@ -7,6 +7,8 @@ single-attempt, fail-closed contract (MATCH-07/08/13/14): every provider failure
 MatcherError, and the real client is built with max_retries=0 + the timeout.
 """
 
+import logging
+
 import anthropic
 import httpx2
 import pytest
@@ -17,6 +19,7 @@ from jobpilot.matching import (
     AnthropicMatcher,
     MatcherError,
     MatcherLLMOutput,
+    match_job,
 )
 from jobpilot.models import Job, JobCreate, Profile, ProfileCreate
 
@@ -151,6 +154,27 @@ def test_missing_parsed_output_becomes_matcher_error():
 
     with pytest.raises(MatcherError):
         matcher.evaluate(_job(), _profile())
+
+
+def test_unexpected_non_sdk_exception_becomes_matcher_error():
+    # A fault the SDK never declares (e.g. a bug in response-shape access) must
+    # still fail closed at the adapter boundary, not escape as a 500.
+    client = _FakeClient(error=RuntimeError("unexpected boom"))
+    matcher = AnthropicMatcher(client=client)
+
+    with pytest.raises(MatcherError):
+        matcher.evaluate(_job(), _profile())
+
+
+def test_unexpected_exception_fails_closed_through_match_job(caplog):
+    matcher = AnthropicMatcher(client=_FakeClient(error=RuntimeError("weird")))
+
+    with caplog.at_level(logging.ERROR, logger="jobpilot"):
+        result = match_job(_job(), _profile(), matcher)
+
+    assert result.verdict == "cannot_assess"
+    assert result.score is None
+    assert any("weird" in (r.exc_text or "") for r in caplog.records)
 
 
 # ---------------------------------------------------------------------------
