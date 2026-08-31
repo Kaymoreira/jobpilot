@@ -11,7 +11,8 @@ enforced in exactly one function.
 import logging
 from typing import Protocol
 
-from pydantic import BaseModel
+import anthropic
+from pydantic import BaseModel, ValidationError
 
 from jobpilot.models import (
     GAP_MAX,
@@ -150,6 +151,56 @@ def interpret(raw: MatcherLLMOutput) -> MatchResult:
         gaps=gaps,
         rationale=raw.rationale.strip()[:RATIONALE_MAX],
     )
+
+
+class AnthropicMatcher:
+    """A `Matcher` over the Anthropic SDK: one bounded, single-attempt call.
+
+    The client is built lazily on first use (`max_retries=0` disables the SDK's
+    auto-retry, and a bounded `timeout` caps the call), so importing this module,
+    creating the app, and running the unit suite need no API key. Every provider
+    failure — API error, timeout, refusal, truncation, or unparseable output —
+    is wrapped as `MatcherError` so the service can fail closed (MATCH-07/08).
+    """
+
+    def __init__(
+        self,
+        *,
+        model: str = "claude-opus-4-8",
+        timeout: float = 60.0,
+        effort: str = "medium",
+        max_tokens: int = 8192,
+        client: anthropic.Anthropic | None = None,
+    ) -> None:
+        self.model = model
+        self.timeout = timeout
+        self.effort = effort
+        self.max_tokens = max_tokens
+        self._client = client
+
+    def evaluate(self, job: Job, profile: Profile) -> MatcherLLMOutput:
+        client = self._client
+        if client is None:
+            client = anthropic.Anthropic(max_retries=0, timeout=self.timeout)
+            self._client = client
+        try:
+            response = client.messages.parse(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": render(job, profile)}],
+                output_format=MatcherLLMOutput,
+                thinking={"type": "adaptive"},
+                output_config={"effort": self.effort},
+            )
+        except (anthropic.APIError, ValidationError) as exc:
+            raise MatcherError("the matcher call failed") from exc
+        if response.stop_reason in {"refusal", "max_tokens"}:
+            raise MatcherError(f"unusable stop reason: {response.stop_reason}")
+        parsed = response.parsed_output
+        if parsed is None:
+            raise MatcherError("the model returned no parsed output")
+        return parsed
 
 
 def match_job(job: Job, profile: Profile | None, matcher: Matcher) -> MatchResult:
