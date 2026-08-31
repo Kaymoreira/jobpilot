@@ -185,26 +185,26 @@ Each requirement gets a unique ID for tracking across design, tasks, and validat
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| MATCH-01 | P1: Score (200 with MatchResult) | Pending | Pending |
-| MATCH-02 | P1: Score (verdict derived from bands, pure fn) | Pending | Pending |
-| MATCH-03 | P1: Score (gaps grounded in Job requirements) | Pending | Pending |
-| MATCH-04 | P1: Score (rationale present, ≤500, truncated) | Pending | Pending |
-| MATCH-05 | P1: Score (request body ignored / no mass-assign) | Pending | Pending |
-| MATCH-06 | P1: Fail closed (absent Profile → cannot_assess, not 404) | Pending | Pending |
-| MATCH-07 | P1: Fail closed (LLM error/timeout → cannot_assess, no retry, logged) | Pending | Pending |
-| MATCH-08 | P1: Fail closed (malformed/out-of-range → cannot_assess, no clamp) | Pending | Pending |
-| MATCH-09 | P1: Fail closed (unknown job_id → 404) | Pending | Pending |
-| MATCH-10 | P1: Fail closed (never a high score under uncertainty — invariant) | Pending | Pending |
-| MATCH-11 | P1: Advisory (side-effect-free / zero-writes) | Pending | Pending |
-| MATCH-12 | P1: Advisory (no auto-apply/mark/enqueue) | Pending | Pending |
-| MATCH-13 | P1: Seam (LLM behind a port) | Pending | Pending |
-| MATCH-14 | P1: Seam (fake drives every path deterministically, offline) | Pending | Pending |
-| MATCH-15 | P2: Eval (human-labeled corpus vs. real LLM) | Pending | Pending |
-| MATCH-16 | P2: Eval (metrics vs. directional thresholds, non-gating) | Pending | Pending |
-| MATCH-17 | P2: Eval (fabrication probe → gap listed, verdict ≠ strong) | Pending | Pending |
-| MATCH-18 | P2: Eval (writeup states small-corpus / directional caveat) | Pending | Pending |
-| MATCH-19 | P2: Eval (thin-job probe → not strong; overconfidence measured) | Pending | Pending |
-| MATCH-20 | P1: Fail closed (cannot_assess → gaps = [], no partial signal) | Pending | Pending |
+| MATCH-01 | P1: Score (200 with MatchResult) | T5, T6 | ✅ Verified |
+| MATCH-02 | P1: Score (verdict derived from bands, pure fn) | T1 | ✅ Verified |
+| MATCH-03 | P1: Score (gaps grounded in Job requirements) | T1, T2, T3, T7 | ✅ Verified |
+| MATCH-04 | P1: Score (rationale present, ≤500, truncated) | T1, T2 | ✅ Verified |
+| MATCH-05 | P1: Score (request body ignored / no mass-assign) | T5 | ✅ Verified |
+| MATCH-06 | P1: Fail closed (absent Profile → cannot_assess, not 404) | T2, T5, T6 | ✅ Verified |
+| MATCH-07 | P1: Fail closed (LLM error/timeout → cannot_assess, no retry, logged) | T2, T4 | ✅ Verified |
+| MATCH-08 | P1: Fail closed (malformed/out-of-range → cannot_assess, no clamp) | T2, T4 | ✅ Verified |
+| MATCH-09 | P1: Fail closed (unknown job_id → 404) | T5 | ✅ Verified |
+| MATCH-10 | P1: Fail closed (never a high score under uncertainty — invariant) | T1, T2 | ✅ Verified |
+| MATCH-11 | P1: Advisory (side-effect-free / zero-writes) | T5, T6 | ✅ Verified |
+| MATCH-12 | P1: Advisory (no auto-apply/mark/enqueue) | T5, T6 | ✅ Verified |
+| MATCH-13 | P1: Seam (LLM behind a port) | T2, T4 | ✅ Verified |
+| MATCH-14 | P1: Seam (fake drives every path deterministically, offline) | T2, T4 | ✅ Verified |
+| MATCH-15 | P2: Eval (human-labeled corpus vs. real LLM) | T7 | ✅ Verified |
+| MATCH-16 | P2: Eval (metrics vs. directional thresholds, non-gating) | T7 | ✅ Verified |
+| MATCH-17 | P2: Eval (fabrication probe → gap listed, verdict ≠ strong) | T7 | ✅ Verified |
+| MATCH-18 | P2: Eval (writeup states small-corpus / directional caveat) | T7 | ✅ Verified |
+| MATCH-19 | P2: Eval (thin-job probe → not strong; overconfidence measured) | T3, T7 | ✅ Verified |
+| MATCH-20 | P1: Fail closed (cannot_assess → gaps = [], no partial signal) | T1, T2 | ✅ Verified |
 
 **ID format:** `MATCH-[NUMBER]`.
 

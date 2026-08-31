@@ -138,8 +138,33 @@ Handoff is the single most-recent snapshot.
 - **Branch:** `feat/m3-matcher` (rebased onto current `main` = M1+M2 merged, tip
   `e11a808`). **Tracking issue: #5** — the M3 PR closes it (`Closes #5`).
 - **Phase:** **Specify ✅ (reviewer r1)** · **Design ✅ (reviewer r1)** · **Tasks ✅**
-  · Execute ⏳ (next) · Verify ⏳. **STOPPED after Tasks for the user's reviewer
-  before Execute.**
+  · **Execute ✅** · **Verify ✅ PASS**. All 7 tasks implemented test-first, one
+  commit each. M3 complete pending PR.
+- **Execute commits:** `cfc3c64` (docs: spec/design/tasks) → `43c7019` T1
+  (`MatchResult`+`Verdict`+band fn) → `d6c8aa3` T2 (port+`interpret`+`match_job`
+  +`FakeMatcher`) → `d8c8d92` T3 (grounded thin-job-aware prompt) → `4ce664d` T4
+  (`AnthropicMatcher`, `anthropic>=1.2` pinned) → `7de883a` T5 (match endpoint +
+  zero-writes spy) → `2bf761f` T6 (app wiring + e2e) → `43463a7` T7 (offline eval
+  harness + pure metric tests). The prompt (T3) was surfaced to the user for
+  review during Execute per the design r1 requirement.
+- **Gate:** 204 tests pass (M2 baseline was 149), overall coverage 97.99%
+  (`--cov-fail-under=80` green); `models.py`/`routes/matcher.py` 100%,
+  `matching.py` 97% (only cosmetic location-render branches uncovered). `evals/`
+  confirmed outside the coverage source. `anthropic 1.2.0` installed; the app
+  imports/starts with no `ANTHROPIC_API_KEY` (lazy client) — asserted by e2e.
+- **Verify (discrimination sensor):** 3 fail-open-critical surfaces mutated and
+  each caught by the suite (restored via `git checkout`, no L-002 CRLF drift):
+  (1) `interpret` out-of-range guard → `if False` → 3 tests failed; (2)
+  `MatchResult` validator band-consistency check → `if False` → 1 test failed;
+  (3) `match_job` profile-absent short-circuit → disabled → 3 tests failed.
+  **3/3 mutations killed, 0 survivors → PASS.** Full suite green after all
+  restores.
+- **Deviation from Tasks plan (both fail-*closed*, not fail-open):** (a) T4's lazy
+  real-client construction is covered by a monkeypatch test asserting
+  `max_retries=0`+`timeout`, so no `# pragma: no cover` was needed there; (b) T5
+  adds a `RepositoryError → generic 500` guard on the reads (with a test) so a
+  storage blip can't masquerade as a verdict — consistent with M1/M2, beyond the
+  literal T5 done-when.
 - **Tasks (`.specs/features/matcher/tasks.md`):** 7 atomic, strictly-sequential,
   test-first tasks, all 20 `MATCH` reqs mapped, one commit each. T1 `MatchResult`
   + `Verdict` + band fn (`models.py`); T2 matcher port + `interpret` + `match_job`
