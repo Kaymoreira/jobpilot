@@ -244,3 +244,73 @@ class Profile(ProfileCreate):
             created_at=created_at or now,
             updated_at=now,
         )
+
+
+# ---------------------------------------------------------------------------
+# M3: matcher advisory result — closed verdict enum, score bands, self-validating
+# ---------------------------------------------------------------------------
+
+Verdict = Literal["strong", "possible", "weak", "cannot_assess"]
+
+WEAK_MAX = 39  # 0..39 => weak
+POSSIBLE_MAX = 74  # 40..74 => possible; 75..100 => strong
+RATIONALE_MAX = 500
+GAP_MAX = 128  # per-entry cap, mirrors MAX_SKILL_LEN
+MAX_GAPS = 20  # cap the number of gap entries
+
+
+def verdict_for_score(score: int) -> Verdict:
+    """Pure score -> verdict band mapping. The score is the single source of
+    truth; the verdict can never contradict it (AD-016)."""
+    if score <= WEAK_MAX:
+        return "weak"
+    if score <= POSSIBLE_MAX:
+        return "possible"
+    return "strong"
+
+
+class MatchResult(BaseModel):
+    """The canonical, self-validating advisory result of a match.
+
+    Uncertainty is structurally distinct from a decided fit: ``score is None``
+    iff ``verdict == "cannot_assess"``, and a ``cannot_assess`` result carries no
+    gaps. For a decided verdict the score must be present, in ``0..100``, and its
+    verdict must equal the score's band. This makes fail-open impossible to
+    construct: an uncertain match can never become a high score (MATCH-10/20).
+    """
+
+    score: int | None  # 0..100, or None iff cannot_assess
+    verdict: Verdict
+    gaps: list[str] = []  # [] when cannot_assess
+    rationale: str  # <= 500, always present
+
+    @classmethod
+    def cannot_assess(cls, reason: str) -> "MatchResult":
+        return cls(
+            score=None,
+            verdict="cannot_assess",
+            gaps=[],
+            rationale=reason.strip()[:RATIONALE_MAX],
+        )
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "MatchResult":
+        if len(self.rationale) > RATIONALE_MAX:
+            raise ValueError(f"rationale must be at most {RATIONALE_MAX} characters")
+        if len(self.gaps) > MAX_GAPS:
+            raise ValueError(f"at most {MAX_GAPS} gaps")
+        if any(len(g) > GAP_MAX for g in self.gaps):
+            raise ValueError(f"each gap must be at most {GAP_MAX} characters")
+        if self.verdict == "cannot_assess":
+            if self.score is not None:
+                raise ValueError("cannot_assess must have score = None")
+            if self.gaps:
+                raise ValueError("cannot_assess must have empty gaps")
+        else:
+            if self.score is None:
+                raise ValueError("a decided verdict requires a score")
+            if not 0 <= self.score <= 100:
+                raise ValueError("score must be in 0..100")
+            if verdict_for_score(self.score) != self.verdict:
+                raise ValueError("verdict must match the score band")
+        return self
