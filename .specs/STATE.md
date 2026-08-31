@@ -153,8 +153,30 @@ Handoff is the single most-recent snapshot.
 - **Branch:** `feat/m3-matcher` (rebased onto current `main` = M1+M2 merged, tip
   `e11a808`). **Tracking issue: #5** — the M3 PR closes it (`Closes #5`).
 - **Phase:** **Specify ✅ (reviewer r1)** · **Design ✅ (reviewer r1)** · **Tasks ✅**
-  · **Execute ✅** · **Verify ✅ PASS**. All 7 tasks implemented test-first, one
-  commit each. M3 complete pending PR.
+  · **Execute ✅** · **Verify ✅ PASS** · **Code-review fixes ✅ (PR #6, round 1)**.
+  All 7 tasks implemented test-first, one commit each. PR #6 open, closes #5.
+  **Not merged — awaiting final check.**
+- **PR #6 review fixes (commit `388c888`, test-first, all gates green):**
+  (1) CHANGELOG `[Unreleased]` M3 entry + new `anthropic` runtime dep.
+  (2) `AnthropicMatcher.evaluate` widened to catch the `anthropic.AnthropicError`
+  SDK root + `ValidationError`, with a broad adapter-boundary `except Exception`
+  fallback — any provider/parse/response fault now fails closed to `MatcherError`
+  → `cannot_assess`, never an unhandled 500 (MATCH-07); new test for an
+  unexpected non-SDK exception through `match_job` (cannot_assess + logged).
+  (3) `render()` now embeds the Profile's verbatim `raw_cv` so a CV-only skill is
+  not a false gap; prompt/render tests updated. (4) `SYSTEM_PROMPT` scoring
+  philosophy (AD-024): core ≫ nice-to-haves, skeptical of long lists, gaps
+  informational-not-rejection, thin-job discipline kept; new `core-fit-minor-gaps`
+  eval probe (placeholder label). The shared-500-helper refactor was explicitly
+  deferred to a separate card (not done here).
+- **Re-Verify (discrimination sensor, round 2):** 4 fail-open-critical surfaces
+  mutated, each caught (restored via `git checkout` from the committed tree):
+  A `interpret` out-of-range guard → 3 tests; B `MatchResult` band validator →
+  1 test; C `match_job` profile-absent short-circuit → 3 tests; **D (new) the
+  widened adapter catch** → 2 tests. **4/4 killed, 0 survivors → PASS.** Lesson
+  reinforced: run sensors only against a **committed** tree — `git checkout`
+  restore silently discards *uncommitted* edits in the same file (hit once mid-fix;
+  re-applied and committed before re-running).
 - **Execute commits:** `cfc3c64` (docs: spec/design/tasks) → `43c7019` T1
   (`MatchResult`+`Verdict`+band fn) → `d6c8aa3` T2 (port+`interpret`+`match_job`
   +`FakeMatcher`) → `d8c8d92` T3 (grounded thin-job-aware prompt) → `4ce664d` T4
