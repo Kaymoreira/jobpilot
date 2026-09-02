@@ -145,8 +145,130 @@ Handoff is the single most-recent snapshot.
   source of truth) so a skill stated only in CV prose is not flagged as a false
   gap. Verified by prompt/render unit tests + a `core-fit-minor-gaps` eval probe
   (placeholder label). _2026-08-31_
+- **AD-025 — M4 P1 artifact = cover letter only; tailored CV deferred to P2/P3
+  under a hard "select & reorder `raw_cv`, never rewrite claims" rule.** The cover
+  letter is the smallest honest vertical slice: it's new prose (cleanest
+  fabrication probe against the Profile source) and reuses the M3 seam almost
+  wholesale. A tailored CV rewrites the candidate's own history — the exact "eat
+  the CV" risk — so it needs a grounding rule that only *selects and reorders*
+  existing `raw_cv` content, never freely rephrases a claim (rephrasing strengthens
+  claims = fabrication). Deferred, not dropped, so the constraint isn't lost. _2026-09-01_
+- **AD-026 — The Generator recomputes the `MatchResult` internally; it is not
+  caller-supplied.** `POST /jobs/{job_id}/generate` reads the Job + singleton
+  Profile, runs the M3 Matcher itself (LLM call #1), then generates (LLM call #2)
+  grounded in Profile + Job + the freshly computed gaps. Gaps are
+  server-authoritative — a caller can't forge/stale a `{strong, gaps:[]}` to make
+  the letter overclaim (mass-assignment discipline, as M2/M3). Price accepted: two
+  sequential LLM calls = two fail-closed surfaces. Reusing an already-computed
+  match is an M5 optimization (persistence), consistent with AD-017. _2026-09-01_
+- **AD-027 — The draft is ephemeral + side-effect-free (zero writes), mirroring
+  AD-017/AD-020.** The letter is returned in the response body; nothing is stored.
+  The draft lifecycle (save, version, "which draft did I send", attach to an
+  application) belongs to the M5 queue, its real consumer; pulling it into M4 drags
+  M5's job in early and reintroduces a staleness fail-open (stored draft vs. changed
+  Profile) with no consumer. For now the human copies the draft out and edits
+  externally. _2026-09-01_
+- **AD-028 — No-fabrication is measured offline, not runtime-guaranteed (mirrors
+  AD-018/AD-019).** Response is `{status, draft, reason}` — prose, no runtime
+  fabrication grader. An LLM grading itself is circular and a deterministic
+  entity-lint is brittle (a flaky gate is a fail-open gate, AD-019); both smuggle
+  fail-open back in. Fabrication rate + gap-honesty are measured by a human-labeled
+  offline eval harness — the QE substitute for a runtime guarantee. Rationale for a
+  measure-only P1: single-user tool, the user reviews their *own* letters and can
+  spot lies about their own history. **Deferred to P2:** a structured self-report
+  (draft + a list of claims each tagged with its `raw_cv` evidence) as an
+  inspectability upgrade — but its LLM-generated citations must themselves be
+  *measured/verified*, not trusted, so it earns its own slice. _2026-09-01_
+- **AD-029 — Fail closed only when there is no trustworthy basis; generate on
+  weak; `draft` is `null` iff `cannot_generate`.** The Generator produces a letter
+  for `strong`/`possible`/**`weak`** verdicts — a weak fit still has real,
+  server-authoritative gaps to frame honestly, and refusing there would over-block
+  and override the human (same "don't reject jobs" stance as AD-024). It fails
+  closed **only** on a `cannot_assess` match (absent Profile, or the match LLM
+  erroring/timing out/malformed) **or** a generation-LLM failure/malformed output.
+  Refusal shape mirrors M3 and is the anti-fail-open crux — **never a hollow
+  letter:** success → `200 {status:"generated", draft:"<letter>"}`; failure → `200
+  {status:"cannot_generate", draft:null, reason}`; unknown `job_id` → `404` (the
+  addressed resource genuinely absent, an absent Profile is not). `draft` is `null`
+  **iff** `status == cannot_generate` — the same "null iff" discipline as M3's
+  `score`. Generation-LLM failure policy = single attempt, bounded timeout, no
+  retry, real cause logged server-side, client sees a generic reason (mirrors
+  AD-021). _2026-09-01_
+- **AD-030 — Letter language = prompt-instructed match-the-Job's-posting, no
+  detection code (heuristic-free, AD-002), measured by the eval harness.** The
+  prompt tells the model to write in the Job posting's language; language selection
+  is delegated to the LLM exactly like the scoring judgment is, and the harness
+  measures language-appropriateness as a metric. Zero params in P1. **Known limit:**
+  posting language ≠ desired application language (e.g. an English posting from a
+  Brazilian company wanting a Portuguese letter). If the eval shows frequent
+  mis-guesses on such ambiguous cases, add an **optional `language` override param
+  as a data-driven P2 escape hatch** — an explicit param is human input, not a
+  heuristic. Provider/model choice stays deferred to Design (via `claude-api`,
+  default latest Claude, reusing the `AnthropicMatcher` adapter pattern). _2026-09-01_
 
 ## Handoff
+
+- **Feature:** `generator` (M4 — `Profile` (`raw_cv` = source of truth) × `Job` ×
+  internally-computed `MatchResult` → a tailored **cover-letter DRAFT**; the second
+  LLM component and the honesty/anti-fabrication centerpiece). Spec at
+  `.specs/features/generator/spec.md`.
+- **Branch:** `feat/m4-generator` (cut from up-to-date `main`, tip `3e8621a` =
+  M1+M2+M3 merged). **Tracking issue: #7** — the M4 PR will close it (`Closes #7`).
+- **Phase:** **Specify ✅ (interview complete, 6 big calls decided by user +
+  reviewer)** · Design ⏳ (not started) · Tasks ⏳ · Execute ⏳ · Verify ⏳.
+- **The six big calls (AD-025..030):** (1) P1 = cover letter only; tailored CV →
+  P2/P3, select+reorder `raw_cv` only. (2) `MatchResult` recomputed internally
+  (server-authoritative gaps). (3) Draft ephemeral + zero-writes. (4) No-fabrication
+  measured offline (measure-only); structured self-report → P2. (5) Fail closed
+  only w/o trustworthy basis, generate on weak, `draft` null iff `cannot_generate`,
+  unknown `job_id` → 404. (6) Language = prompt-instructed match-the-Job, heuristic-
+  free, measured; optional override param → P2 escape hatch.
+- **Contract decided:** `GenerateResult {status: generated|cannot_generate, draft:
+  str | null, reason: str}`; `draft` non-null **iff** `status = generated`. Endpoint
+  `POST /jobs/{job_id}/generate`, synchronous, ephemeral, side-effect-free.
+- **Requirements:** 27 EARS reqs `GEN-01..27` (P1: 01–21 + 27 generate/grounded/
+  fail-closed/advisory/seam; P2: 22–26 eval harness incl. thin-job probe). All
+  `Pending` — Tasks phase not started. **GEN-27 added in spec review (r1):** a
+  generation **refusal or incomplete (`max_tokens`) stop reason** → `cannot_generate`
+  — non-empty-but-untrustworthy text (polite decline / truncated letter) is a
+  fail-open, likely for a long artifact; mirrors M3's `AnthropicMatcher` stop-reason
+  check. Listed after the P2 block like MATCH-20.
+- **Guardrails locked as reqs:** no-fabrication = grounded-only-in-Profile+Job,
+  prompt-enforced + harness-**measured** (GEN-07/08/22/23, AD-028); human-in-the-
+  loop = zero-writes + no auto-send (GEN-16/17, AD-027); fail-open = every
+  uncertainty → `cannot_generate`+null draft, never a hollow letter (GEN-10..15,
+  AD-029); testability = deterministic ports (Generator + injected M3 Matcher) +
+  single fail-closed mapper + offline eval harness (GEN-18..21, 22–26, AD-028).
+- **Deferred to Design:** provider/model (via `claude-api`, reuse `AnthropicMatcher`
+  pattern); exact `DRAFT_MAX`; exact generation timeout; the narrow LLM output
+  contract; whether the internal Matcher call reuses the same client/config as M3.
+- **Spec-review r1 ratification notes (address in Design, not spec edits):**
+  (a) **`GenerateResult` must be self-validating** — a `model_validator` enforcing
+  `draft is null` **iff** `status == cannot_generate`, mirroring M3's `MatchResult`
+  structural guard; the null-iff is a *structural* contract, not merely behavioral
+  (GEN-03/GEN-15), and a natural mutation target. (b) **The generation prompt (a
+  first-class reviewable artifact) must make the output read as a natural cover
+  letter and NEVER expose the internal match/gap machinery** — no "per the analysis
+  I have gaps in X"; gaps inform tone/framing, they are not quoted. (c) **Pin the
+  `reason` value on success** (e.g. a fixed `"ok"`/empty) **and decide whether
+  `reason` is length-bounded** (advisory prose vs. fixed enum-like string).
+- **Lessons carried:** L-001 (Pydantic v2 skips validators on defaults — test the
+  `draft`/`status` null-iff with explicit values, not omission); L-002 (Windows
+  sensor restore must be binary/`newline=""` to avoid LF→CRLF drift); M3
+  review-fix process note (run discrimination sensors only against a **committed**
+  tree — `git checkout` restore silently discards uncommitted edits in the same
+  file).
+- **Next:** Design — reuse the M1/M2/M3 route→models→port→`app.state`+`Depends`
+  seam. New `generation.py` (`Generator` Protocol, `AnthropicGenerator`,
+  `GeneratorError`, a single fail-closed `build_result()`/mapper, `generate_letter()`
+  orchestrating the internal `match_job` + generation), new `routes/generator.py`
+  (`POST /jobs/{job_id}/generate`), `GenerateResult`/`GenStatus` +`DRAFT_MAX` in
+  `models.py`, `FakeGenerator` in `tests/fakes.py`, eval harness in
+  `evals/generator/` (corpus + runner + pure `metrics.py`). Provider/model via
+  `claude-api`. The generation prompt is a first-class reviewable artifact (like
+  M3's T3) — surface its text for review during Design/Execute.
+
+## Prior handoff — `matcher` (M3) — COMPLETE / PR #6
 
 - **Feature:** `matcher` (M3 — `Job` × `Profile` → `MatchResult`; the first LLM
   component). Spec at `.specs/features/matcher/spec.md`.
