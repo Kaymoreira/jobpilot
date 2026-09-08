@@ -18,6 +18,8 @@ appended in later tasks (T3, T4).
 import logging
 from typing import Protocol
 
+import anthropic
+
 from jobpilot.matching import Matcher, match_job
 from jobpilot.models import (
     DRAFT_MAX,
@@ -159,6 +161,72 @@ def build_result(raw_draft: str) -> GenerateResult:
     return GenerateResult(
         status="generated", draft=draft[:DRAFT_MAX], reason=GENERATED_REASON
     )
+
+
+class AnthropicGenerator:
+    """A `Generator` over the Anthropic SDK: one bounded, single-attempt call.
+
+    The client is built lazily on first use (`max_retries=0` disables the SDK's
+    auto-retry, and a bounded `timeout` caps the call), so importing this module,
+    creating the app, and running the unit suite need no API key. The draft is a
+    single prose cover letter, so this uses a plain `messages.create` and reads
+    the text block (AD-032) rather than structured `messages.parse`. Every
+    provider failure -- API error, timeout, a refusal or `max_tokens` stop
+    reason, or a missing/empty text block -- is wrapped as `GeneratorError` so the
+    service can fail closed, never returning a hollow or truncated letter
+    (GEN-12/13/27).
+    """
+
+    def __init__(
+        self,
+        *,
+        model: str = "claude-opus-4-8",
+        timeout: float = 60.0,
+        effort: str = "medium",
+        max_tokens: int = 2048,
+        client: anthropic.Anthropic | None = None,
+    ) -> None:
+        self.model = model
+        self.timeout = timeout
+        self.effort = effort
+        self.max_tokens = max_tokens
+        self._client = client
+
+    def generate(self, job: Job, profile: Profile, match: MatchResult) -> str:
+        client = self._client
+        if client is None:
+            client = anthropic.Anthropic(max_retries=0, timeout=self.timeout)
+            self._client = client
+        try:
+            response = client.messages.create(
+                model=self.model,
+                max_tokens=self.max_tokens,
+                system=SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": render(job, profile, match)}],
+                thinking={"type": "adaptive"},
+                output_config={"effort": self.effort},
+            )
+            stop_reason = response.stop_reason
+            text = next(
+                (b.text for b in response.content if getattr(b, "type", None) == "text"),
+                None,
+            )
+        except anthropic.AnthropicError as exc:
+            # AnthropicError is the SDK's root (covers APIError, APITimeoutError,
+            # APIConnectionError, ...). Fail closed.
+            raise GeneratorError("the generation call failed") from exc
+        except Exception as exc:  # noqa: BLE001
+            # Adapter boundary: any other fault (an undeclared SDK error, an
+            # unexpected response shape) must fail closed too, never escape as an
+            # unhandled 500.
+            raise GeneratorError("unexpected generation failure") from exc
+        if stop_reason in {"refusal", "max_tokens"}:
+            # Non-empty-but-untrustworthy text: a polite decline or a letter cut
+            # off mid-sentence is not a trustworthy draft (GEN-27).
+            raise GeneratorError(f"unusable stop reason: {stop_reason}")
+        if text is None or not text.strip():
+            raise GeneratorError("the model returned no letter text")
+        return text
 
 
 def generate_letter(
