@@ -205,6 +205,48 @@ Handoff is the single most-recent snapshot.
   as a data-driven P2 escape hatch** — an explicit param is human input, not a
   heuristic. Provider/model choice stays deferred to Design (via `claude-api`,
   default latest Claude, reusing the `AnthropicMatcher` adapter pattern). _2026-09-01_
+- **AD-031 — Generator provider/model = `anthropic` SDK + `claude-opus-4-8`,
+  reusing the M3 `AnthropicMatcher` adapter shape; single attempt via
+  `max_retries=0` + `timeout=60s`, `max_tokens=2048`.** Confirmed against the
+  `claude-api` skill (not memory): model is the skill's mandated default;
+  `max_retries=0` makes AD-021's single-attempt real; `timeout=60s` →
+  `APITimeoutError` → `GeneratorError` → `cannot_generate`; `thinking=adaptive`,
+  `effort=medium`, no `temperature` (removed on 4.8). `max_tokens=2048` gives a
+  short cover letter ~3× headroom so a normal letter completes with
+  `stop_reason=end_turn` (well under the ~16K non-streaming timeout guard → no
+  streaming); a runaway hit of the cap → `stop_reason=max_tokens` →
+  `GeneratorError` → `cannot_generate` (GEN-27). `stop_reason in {refusal,
+  max_tokens}` fails closed, mirroring `AnthropicMatcher`. Client built lazily
+  (no key to import/start/test). No new runtime dep — reuses the `anthropic>=1.2`
+  M3 pinned. All values tunable. _2026-09-01_
+- **AD-032 — Generator uses plain `messages.create` (read the `text` block), NOT
+  `messages.parse`; `GenerateResult` self-validates; success `reason` is pinned;
+  `DRAFT_MAX=6000`.** M3 used `messages.parse` because it returned three
+  *structured* fields; M4's output is a single **prose** cover letter, so a
+  JSON-schema `str` wrapper would only JSON-escape the whole letter for zero
+  safety gain (structured outputs strip nothing useful from a lone string) — the
+  `claude-api` "Which Surface" table puts content generation on a plain
+  one-request `messages.create`. The `stop_reason`/`max_retries`/`timeout`
+  discipline is identical either way. Reviewer-note follow-ups baked in:
+  (a) `GenerateResult` has a `model_validator` making `draft is None` **iff**
+  `status == cannot_generate` (+ non-empty & ≤ `DRAFT_MAX` on success) —
+  structural, not behavioral, and a mutation target; (b) the `SYSTEM_PROMPT` +
+  `render` gap header instruct the model to treat gaps as *internal guidance the
+  letter must never mention* (no "per the analysis…"), so the letter reads
+  naturally; (c) success `reason` is pinned to `GENERATED_REASON="ok"` and
+  failure reasons are a closed internal set — never model-derived, so no length
+  bound is needed. `DRAFT_MAX=6000` chars truncates (not fails) an over-length
+  but complete draft (GEN-05); tunable. **Refinement (design r1, candidate/domain
+  input):** the generator's `render(job, profile, match)` **OMITS
+  `salary_expectation` entirely** — the letter must never cite salary/compensation,
+  and not feeding the figure to the model is a stronger guarantee than instructing
+  against it (can't leak what it never saw). The M3 Matcher's `render` is
+  unchanged (salary is legitimate scoring signal there); this is the generator's
+  own `render` only. Belt-and-suspenders: one `SYSTEM_PROMPT` line ("Do not
+  mention salary, compensation, or pay expectations — those are handled elsewhere
+  in the application."). `base_location` stays in the render as **neutral context
+  only** — no instruction to feature or downplay remote/location preference.
+  _2026-09-01_
 
 ## Handoff
 
@@ -214,8 +256,8 @@ Handoff is the single most-recent snapshot.
   `.specs/features/generator/spec.md`.
 - **Branch:** `feat/m4-generator` (cut from up-to-date `main`, tip `3e8621a` =
   M1+M2+M3 merged). **Tracking issue: #7** — the M4 PR will close it (`Closes #7`).
-- **Phase:** **Specify ✅ (interview complete, 6 big calls decided by user +
-  reviewer)** · Design ⏳ (not started) · Tasks ⏳ · Execute ⏳ · Verify ⏳.
+- **Phase:** **Specify ✅ (r1) · Design ✅ (draft, awaiting reviewer)** · Tasks ⏳
+  · Execute ⏳ · Verify ⏳. Design at `.specs/features/generator/design.md`.
 - **The six big calls (AD-025..030):** (1) P1 = cover letter only; tailored CV →
   P2/P3, select+reorder `raw_cv` only. (2) `MatchResult` recomputed internally
   (server-authoritative gaps). (3) Draft ephemeral + zero-writes. (4) No-fabrication
@@ -239,10 +281,24 @@ Handoff is the single most-recent snapshot.
   uncertainty → `cannot_generate`+null draft, never a hollow letter (GEN-10..15,
   AD-029); testability = deterministic ports (Generator + injected M3 Matcher) +
   single fail-closed mapper + offline eval harness (GEN-18..21, 22–26, AD-028).
-- **Deferred to Design:** provider/model (via `claude-api`, reuse `AnthropicMatcher`
-  pattern); exact `DRAFT_MAX`; exact generation timeout; the narrow LLM output
-  contract; whether the internal Matcher call reuses the same client/config as M3.
-- **Spec-review r1 ratification notes (address in Design, not spec edits):**
+- **Resolved in Design (AD-031/AD-032):** provider/model (`anthropic` +
+  `claude-opus-4-8`, reuse `AnthropicMatcher` shape, no new dep); `max_retries=0`
+  + `timeout=60s` + `max_tokens=2048`; **plain `messages.create` over
+  `messages.parse`** (prose, not structured — AD-032); `DRAFT_MAX=6000` (truncate
+  not fail); self-validating `GenerateResult` (draft null iff cannot_generate);
+  pinned success `reason` + closed failure-reason set; the internal match reuses
+  the **same injected `Matcher` port** (`app.state.matcher` / `match_job`) in
+  process — no HTTP self-call.
+- **Design components:** new `generation.py` (`Generator` Protocol,
+  `AnthropicGenerator`, `GeneratorError`, `SYSTEM_PROMPT`+`render(job,profile,
+  match)`, `build_result` success-mapper, `generate_letter` orchestrator);
+  `GenerateResult`/`GenStatus`/`DRAFT_MAX`/`GENERATED_REASON` in `models.py`;
+  `routes/generator.py` (`POST /jobs/{job_id}/generate`, reuses `get_matcher` +
+  both repo providers + the `RepositoryError→500` shape); `FakeGenerator` in
+  `tests/fakes.py`; `evals/generator/` (corpus + pure `metrics.py` +
+  `run_eval.py`). Prompt surfaced for review in the design doc (§ Reviewable
+  Prompt) — it hides the gap machinery ("internal guidance — do NOT mention").
+- **Spec-review r1 ratification notes (addressed in Design):**
   (a) **`GenerateResult` must be self-validating** — a `model_validator` enforcing
   `draft is null` **iff** `status == cannot_generate`, mirroring M3's `MatchResult`
   structural guard; the null-iff is a *structural* contract, not merely behavioral
@@ -258,15 +314,20 @@ Handoff is the single most-recent snapshot.
   review-fix process note (run discrimination sensors only against a **committed**
   tree — `git checkout` restore silently discards uncommitted edits in the same
   file).
-- **Next:** Design — reuse the M1/M2/M3 route→models→port→`app.state`+`Depends`
-  seam. New `generation.py` (`Generator` Protocol, `AnthropicGenerator`,
-  `GeneratorError`, a single fail-closed `build_result()`/mapper, `generate_letter()`
-  orchestrating the internal `match_job` + generation), new `routes/generator.py`
-  (`POST /jobs/{job_id}/generate`), `GenerateResult`/`GenStatus` +`DRAFT_MAX` in
-  `models.py`, `FakeGenerator` in `tests/fakes.py`, eval harness in
-  `evals/generator/` (corpus + runner + pure `metrics.py`). Provider/model via
-  `claude-api`. The generation prompt is a first-class reviewable artifact (like
-  M3's T3) — surface its text for review during Design/Execute.
+- **Next:** **Design reviewer pass, then Tasks.** Design draft complete + surfaced
+  for review (stopped before Tasks per instruction). Tasks will break M4 into
+  atomic, strictly-ordered, test-first tasks, one commit each, all 27 `GEN` reqs
+  mapped — anticipated shape mirroring M3's 7: (T1) `models.py` — `GenStatus`,
+  `DRAFT_MAX`/`GENERATED_REASON`, self-validating `GenerateResult`; (T2)
+  `generation.py` — `Generator` Protocol, `GeneratorError`, `build_result`,
+  `generate_letter` (reuses `match_job`); (T3) **authored+reviewed prompt task** —
+  `SYSTEM_PROMPT` + `render(job,profile,match)` (grounding / gap-honesty /
+  non-disclosure / job-language), text re-surfaced for review; (T4)
+  `AnthropicGenerator` (injected-client offline tests, plain `messages.create`,
+  stop-reason + empty-text → `GeneratorError`); (T5) `routes/generator.py`; (T6)
+  app wiring + e2e + spy-repo zero-writes test; (T7) eval harness
+  `evals/generator/` (corpus + runner + pure `metrics.py`). No new dep. Prompt is
+  a first-class artifact (T3), not an Execute detail.
 
 ## Prior handoff — `matcher` (M3) — COMPLETE / PR #6
 
