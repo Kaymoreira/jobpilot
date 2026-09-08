@@ -11,7 +11,14 @@ the model cannot leak a figure it never saw.
 """
 
 from jobpilot.generation import SYSTEM_PROMPT, render
-from jobpilot.models import Job, MatchResult, Profile, ProfileCreate, SalaryRange
+from jobpilot.models import (
+    Job,
+    Location,
+    MatchResult,
+    Profile,
+    ProfileCreate,
+    SalaryRange,
+)
 
 
 def _job() -> Job:
@@ -78,6 +85,24 @@ def test_render_embeds_gaps_under_internal_guidance_header():
 def test_render_shows_none_when_no_gaps():
     text = render(_job(), _profile_with_salary(), _match([]))
     assert "(none)" in text
+
+
+def test_render_includes_location_as_neutral_context():
+    profile = Profile.new_from(
+        ProfileCreate(
+            skills=["Python"],
+            seniority="pleno",
+            location=Location(
+                remote_preference="remote",
+                base_location="Ilheus/BA",
+                open_to_international=True,
+            ),
+        )
+    )
+    text = render(_job(), profile, _match([]))
+    assert "remote" in text
+    assert "based in Ilheus/BA" in text
+    assert "open to international" in text
 
 
 # ---------------------------------------------------------------------------
