@@ -245,6 +245,16 @@ def generate_letter(
     its traceback and mapped to ``cannot_generate`` (GEN-12). Generate on
     ``strong``/``possible``/``weak`` — a weak fit still has real gaps to frame
     honestly (GEN-04). Pure w.r.t. storage: calls no writes (GEN-16/17).
+
+    Fail-closed contract (load-bearing): this function only catches
+    ``GeneratorError``. The guarantee that a generation fault never escapes as an
+    unhandled 500 therefore rests entirely on the adapter being **total** — it
+    must convert *every* fault (API error, timeout, refusal, ``max_tokens``
+    truncation, empty or unparseable output, and any unexpected exception) into
+    ``GeneratorError``. ``AnthropicGenerator`` does this via a broad
+    adapter-boundary ``except``. Any future ``Generator`` implementation MUST
+    uphold the same totality, or a raw exception will bypass this catch and
+    surface as a 500.
     """
     if profile is None:
         return GenerateResult.cannot_generate("profile absent")

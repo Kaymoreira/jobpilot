@@ -8,6 +8,12 @@ internally for server-authoritative gaps and drafts a letter, performing `.get()
 reads only and never writing (GEN-16/17). A storage read failure surfaces as a
 generic `500` (never a draft, GEN-21); a `cannot_assess` match or an LLM failure
 fails closed to `cannot_generate` inside `generate_letter`.
+
+Note the route does NOT wrap `generate_letter` in a try/except for LLM faults:
+that no-500-from-generation guarantee relies on the `Generator` adapter being
+total (converting every fault to `GeneratorError`, which `generate_letter`
+catches). See `generate_letter`'s fail-closed contract. The only `try/except`
+here is for the repository reads, which are genuine `500` territory (GEN-21).
 """
 
 import logging
