@@ -9,7 +9,8 @@ Implement these tasks with the `tlc-spec-driven` skill: **activate it by name an
 ---
 
 **Design**: `.specs/features/generator/design.md`
-**Status**: Draft — awaiting approval before Execute.
+**Status**: ✅ Complete — all 7 tasks implemented test-first (one commit each),
+Build gate green (274 tests, 98.14% coverage), discrimination sensor 8/8 killed.
 
 ---
 

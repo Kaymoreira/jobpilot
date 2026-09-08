@@ -208,39 +208,39 @@ Each requirement gets a unique ID for tracking across design, tasks, and validat
 
 | Requirement ID | Story | Phase | Status |
 | -------------- | ----- | ----- | ------ |
-| GEN-01 | P1: Generate (200 with GenerateResult) | - | Pending |
-| GEN-02 | P1: Generate (recompute match internally, then generate) | - | Pending |
-| GEN-03 | P1: Generate (GenerateResult contract; draft non-null iff generated) | - | Pending |
-| GEN-04 | P1: Generate (generate on strong/possible/weak) | - | Pending |
-| GEN-05 | P1: Generate (draft bounded ≤ DRAFT_MAX, truncated) | - | Pending |
-| GEN-06 | P1: Generate (request body ignored / no mass-assign) | - | Pending |
-| GEN-07 | P1: Grounded (only Profile raw_cv+fields + Job; no invented facts — measured) | - | Pending |
-| GEN-08 | P1: Grounded (gaps framed as areas to grow, never possessed — measured) | - | Pending |
-| GEN-09 | P1: Grounded (draft language matches Job posting — prompt-instructed, measured) | - | Pending |
-| GEN-10 | P1: Fail closed (absent Profile → cannot_generate, not 404, no letter) | - | Pending |
-| GEN-11 | P1: Fail closed (match cannot_assess → cannot_generate) | - | Pending |
-| GEN-12 | P1: Fail closed (generation LLM error/timeout → cannot_generate, no retry, logged) | - | Pending |
-| GEN-13 | P1: Fail closed (malformed/empty draft → cannot_generate, never hollow) | - | Pending |
-| GEN-14 | P1: Fail closed (unknown job_id → 404) | - | Pending |
-| GEN-15 | P1: Fail closed (never a non-null draft under uncertainty; draft null iff cannot_generate — invariant) | - | Pending |
-| GEN-16 | P1: Advisory (side-effect-free / zero-writes) | - | Pending |
-| GEN-17 | P1: Advisory (no auto-send/submit/mark/enqueue) | - | Pending |
-| GEN-18 | P1: Seam (Generator + Matcher behind ports; fakes, offline) | - | Pending |
-| GEN-19 | P1: Seam (fakes drive every path deterministically) | - | Pending |
-| GEN-20 | P1: Seam (single central fail-closed mapper → cannot_generate) | - | Pending |
-| GEN-21 | P1: Seam (RepositoryError → generic 500 + log, not cannot_generate) | - | Pending |
-| GEN-22 | P2: Eval (fabrication-rate metric on forbidden-fact probes) | - | Pending |
-| GEN-23 | P2: Eval (gap-honesty metric) | - | Pending |
-| GEN-24 | P2: Eval (language-appropriateness metric) | - | Pending |
-| GEN-25 | P2: Eval (thin-job probe → no fabricated padding) | - | Pending |
-| GEN-26 | P2: Eval (human-labeled corpus, non-gating; pure metrics unit-tested; small-corpus caveat) | - | Pending |
-| GEN-27 | P1: Fail closed (refusal or incomplete/max_tokens stop reason → cannot_generate; non-empty ≠ trustworthy) | - | Pending |
+| GEN-01 | P1: Generate (200 with GenerateResult) | T2, T5, T6 | ✅ Verified |
+| GEN-02 | P1: Generate (recompute match internally, then generate) | T2 | ✅ Verified |
+| GEN-03 | P1: Generate (GenerateResult contract; draft non-null iff generated) | T1 | ✅ Verified |
+| GEN-04 | P1: Generate (generate on strong/possible/weak) | T2 | ✅ Verified |
+| GEN-05 | P1: Generate (draft bounded ≤ DRAFT_MAX, truncated) | T1, T2 | ✅ Verified |
+| GEN-06 | P1: Generate (request body ignored / no mass-assign) | T5 | ✅ Verified |
+| GEN-07 | P1: Grounded (only Profile raw_cv+fields + Job; no invented facts — measured) | T3, T7 | ✅ Verified |
+| GEN-08 | P1: Grounded (gaps framed as areas to grow, never possessed — measured) | T3, T7 | ✅ Verified |
+| GEN-09 | P1: Grounded (draft language matches Job posting — prompt-instructed, measured) | T3, T7 | ✅ Verified |
+| GEN-10 | P1: Fail closed (absent Profile → cannot_generate, not 404, no letter) | T2, T5, T6 | ✅ Verified |
+| GEN-11 | P1: Fail closed (match cannot_assess → cannot_generate) | T2, T5 | ✅ Verified |
+| GEN-12 | P1: Fail closed (generation LLM error/timeout → cannot_generate, no retry, logged) | T2, T4 | ✅ Verified |
+| GEN-13 | P1: Fail closed (malformed/empty draft → cannot_generate, never hollow) | T2, T4 | ✅ Verified |
+| GEN-14 | P1: Fail closed (unknown job_id → 404) | T5, T6 | ✅ Verified |
+| GEN-15 | P1: Fail closed (never a non-null draft under uncertainty; draft null iff cannot_generate — invariant) | T1, T2 | ✅ Verified |
+| GEN-16 | P1: Advisory (side-effect-free / zero-writes) | T5, T6 | ✅ Verified |
+| GEN-17 | P1: Advisory (no auto-send/submit/mark/enqueue) | T5, T6 | ✅ Verified |
+| GEN-18 | P1: Seam (Generator + Matcher behind ports; fakes, offline) | T2, T4 | ✅ Verified |
+| GEN-19 | P1: Seam (fakes drive every path deterministically) | T2, T4 | ✅ Verified |
+| GEN-20 | P1: Seam (single central fail-closed mapper → cannot_generate) | T2 | ✅ Verified |
+| GEN-21 | P1: Seam (RepositoryError → generic 500 + log, not cannot_generate) | T5 | ✅ Verified |
+| GEN-22 | P2: Eval (fabrication-rate metric on forbidden-fact probes) | T7 | ✅ Verified |
+| GEN-23 | P2: Eval (gap-honesty metric) | T7 | ✅ Verified |
+| GEN-24 | P2: Eval (language-appropriateness metric) | T7 | ✅ Verified |
+| GEN-25 | P2: Eval (thin-job probe → no fabricated padding) | T7 | ✅ Verified |
+| GEN-26 | P2: Eval (human-labeled corpus, non-gating; pure metrics unit-tested; small-corpus caveat) | T7 | ✅ Verified |
+| GEN-27 | P1: Fail closed (refusal or incomplete/max_tokens stop reason → cannot_generate; non-empty ≠ trustworthy) | T4 | ✅ Verified |
 
 **ID format:** `GEN-[NUMBER]`.
 
 **Status values:** Pending → In Design → In Tasks → Implementing → Verified
 
-**Coverage:** 27 total, 0 mapped to tasks yet (Tasks phase pending). GEN-01..21 + GEN-27 are P1; GEN-22..26 are P2 (eval harness). (GEN-27 is a P1 fail-closed requirement listed after the P2 block, mirroring M3's MATCH-20 placement.)
+**Coverage:** 27 total, all 27 mapped to tasks and ✅ Verified (Execute + Verify complete). GEN-01..21 + GEN-27 are P1; GEN-22..26 are P2 (eval harness). (GEN-27 is a P1 fail-closed requirement listed after the P2 block, mirroring M3's MATCH-20 placement.)
 
 ---
 

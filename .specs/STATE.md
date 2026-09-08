@@ -256,8 +256,42 @@ Handoff is the single most-recent snapshot.
   `.specs/features/generator/spec.md`.
 - **Branch:** `feat/m4-generator` (cut from up-to-date `main`, tip `3e8621a` =
   M1+M2+M3 merged). **Tracking issue: #7** — the M4 PR will close it (`Closes #7`).
-- **Phase:** **Specify ✅ (r1) · Design ✅ (draft, awaiting reviewer)** · Tasks ⏳
-  · Execute ⏳ · Verify ⏳. Design at `.specs/features/generator/design.md`.
+- **Phase:** **Specify ✅ (r1) · Design ✅ (r1) · Tasks ✅ · Execute ✅ · Verify ✅
+  PASS**. All 7 tasks implemented test-first, one commit each. **Not merged —
+  awaiting final review** (do NOT merge; bring results back).
+- **Execute commits (branch `feat/m4-generator`):** `087f754` (docs: tasks) →
+  `36ad3da` T1 (`GenerateResult`+`GenStatus`+`DRAFT_MAX`) → `e7a8599` T2
+  (`Generator` port + `build_result` + `generate_letter` + `FakeGenerator`) →
+  `3505670` T3 (grounded machinery-hiding prompt, surfaced + user-approved) →
+  `9594d4a` (test-only: cover the `render` location branch T3 missed, L-001-style,
+  mirrors M3's `3c7dd13`) → `46d7da9` T4 (`AnthropicGenerator`, plain
+  `messages.create`) → `4ead987` T5 (generate route + zero-writes spy +
+  `RepositoryError`→500) → `132fca2` T6 (app wiring + e2e) → `2201313` T7 (offline
+  eval harness + pure metric tests). The prompt (T3) was surfaced for review
+  mid-Execute per the design r1 requirement; the user added the anti-AI-tells /
+  no-em-dash instruction (prompt content) before approving.
+- **Gate:** **274 tests pass** (M3 baseline was 204; +70 for M4), overall coverage
+  **98.14%** (`--cov-fail-under=80` green); `models.py` 100%, `routes/generator.py`
+  100%, `generation.py` 98% (only cosmetic `base_location`/`open_to_international`
+  sub-branches uncovered, same as M3's `matching.py`). `evals/generator/` confirmed
+  outside the coverage source. No new runtime dependency (M3's `anthropic` reused
+  for LLM call #1). App imports/starts with no `ANTHROPIC_API_KEY` (lazy clients)
+  — asserted by e2e.
+- **Verify (discrimination sensor, committed tree, binary-safe restore per L-002):**
+  8 fail-open-critical surfaces mutated, each caught: A `GenerateResult` validator
+  generated-requires-draft → 1 test; B `build_result` hollow-draft guard → 2; C
+  `generate_letter` match-`cannot_assess` short-circuit → 3; D profile-absent
+  short-circuit → 3; **E the GEN-27 `refusal`/`max_tokens` stop-reason guard → 2**;
+  F adapter empty/missing-text guard → 2; G route 404-vs-`cannot_generate`
+  asymmetry → 2; H validator `cannot_generate`→draft-null branch → 1. **8/8 killed,
+  0 survivors → PASS.** Clean tree + full suite green after all restores (no L-002
+  drift).
+- **Deviation from Tasks plan (fail-*closed*, not fail-open):** one extra
+  test-only commit (`9594d4a`) covering the `render` location branch the full-suite
+  gate surfaced after T4 — mirrors M3's identical `3c7dd13` follow-up. No src
+  behavior changed.
+- **Design at `.specs/features/generator/design.md`; tasks at
+  `.specs/features/generator/tasks.md`.**
 - **The six big calls (AD-025..030):** (1) P1 = cover letter only; tailored CV →
   P2/P3, select+reorder `raw_cv` only. (2) `MatchResult` recomputed internally
   (server-authoritative gaps). (3) Draft ephemeral + zero-writes. (4) No-fabrication
@@ -269,8 +303,8 @@ Handoff is the single most-recent snapshot.
   str | null, reason: str}`; `draft` non-null **iff** `status = generated`. Endpoint
   `POST /jobs/{job_id}/generate`, synchronous, ephemeral, side-effect-free.
 - **Requirements:** 27 EARS reqs `GEN-01..27` (P1: 01–21 + 27 generate/grounded/
-  fail-closed/advisory/seam; P2: 22–26 eval harness incl. thin-job probe). All
-  `Pending` — Tasks phase not started. **GEN-27 added in spec review (r1):** a
+  fail-closed/advisory/seam; P2: 22–26 eval harness incl. thin-job probe). **All
+  27 ✅ Verified.** **GEN-27 added in spec review (r1):** a
   generation **refusal or incomplete (`max_tokens`) stop reason** → `cannot_generate`
   — non-empty-but-untrustworthy text (polite decline / truncated letter) is a
   fail-open, likely for a long artifact; mirrors M3's `AnthropicMatcher` stop-reason
@@ -314,20 +348,12 @@ Handoff is the single most-recent snapshot.
   review-fix process note (run discrimination sensors only against a **committed**
   tree — `git checkout` restore silently discards uncommitted edits in the same
   file).
-- **Next:** **Design reviewer pass, then Tasks.** Design draft complete + surfaced
-  for review (stopped before Tasks per instruction). Tasks will break M4 into
-  atomic, strictly-ordered, test-first tasks, one commit each, all 27 `GEN` reqs
-  mapped — anticipated shape mirroring M3's 7: (T1) `models.py` — `GenStatus`,
-  `DRAFT_MAX`/`GENERATED_REASON`, self-validating `GenerateResult`; (T2)
-  `generation.py` — `Generator` Protocol, `GeneratorError`, `build_result`,
-  `generate_letter` (reuses `match_job`); (T3) **authored+reviewed prompt task** —
-  `SYSTEM_PROMPT` + `render(job,profile,match)` (grounding / gap-honesty /
-  non-disclosure / job-language), text re-surfaced for review; (T4)
-  `AnthropicGenerator` (injected-client offline tests, plain `messages.create`,
-  stop-reason + empty-text → `GeneratorError`); (T5) `routes/generator.py`; (T6)
-  app wiring + e2e + spy-repo zero-writes test; (T7) eval harness
-  `evals/generator/` (corpus + runner + pure `metrics.py`). No new dep. Prompt is
-  a first-class artifact (T3), not an Execute detail.
+- **Next:** **Final review, then integrate.** Execute + Verify complete on
+  `feat/m4-generator` (not merged). Awaiting the user's final review; then open a
+  PR that `Closes #7` (add the M4 `[Unreleased]` CHANGELOG entry as part of the
+  PR, as M3 did in its review-fix commit). M5 (ApplicationQueue) is the next
+  milestone — it is the real consumer that justifies persisting the draft
+  (AD-027) and reusing an already-computed match (AD-026).
 
 ## Prior handoff — `matcher` (M3) — COMPLETE / PR #6
 
