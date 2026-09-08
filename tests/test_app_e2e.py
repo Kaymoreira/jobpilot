@@ -8,14 +8,21 @@ echoed back from the POST response.
 from fastapi.testclient import TestClient
 
 from jobpilot.app import create_app
+from jobpilot.generation import AnthropicGenerator
 from jobpilot.matching import AnthropicMatcher, MatcherError, MatcherLLMOutput
+from jobpilot.routes.generator import get_generator
 from jobpilot.routes.jobs import INTERNAL_ERROR_BODY, get_repository
 from jobpilot.routes.matcher import get_matcher
 from jobpilot.routes.profile import (
     INTERNAL_ERROR_BODY as PROFILE_INTERNAL_ERROR_BODY,
     get_profile_repository,
 )
-from tests.fakes import FakeJobRepository, FakeMatcher, FakeProfileRepository
+from tests.fakes import (
+    FakeGenerator,
+    FakeJobRepository,
+    FakeMatcher,
+    FakeProfileRepository,
+)
 
 
 class _FailingRepository(FakeJobRepository):
@@ -278,3 +285,88 @@ def test_matcher_failure_fails_closed_e2e(monkeypatch):
 
     assert resp.status_code == 200
     assert resp.json()["verdict"] == "cannot_assess"
+
+
+# ---------------------------------------------------------------------------
+# Generator (M4) end-to-end over the real sqlite stack (LLMs faked, no network)
+# ---------------------------------------------------------------------------
+
+
+def _generate_client(matcher, generator, monkeypatch) -> TestClient:
+    # Prove startup needs no API key: build the app with the var unset.
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    app = create_app(db_path=":memory:")
+    app.dependency_overrides[get_matcher] = lambda: matcher
+    app.dependency_overrides[get_generator] = lambda: generator
+    return TestClient(app)
+
+
+def test_app_wires_a_key_free_anthropic_generator(monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    app = create_app(db_path=":memory:")
+
+    # Constructed lazily — no client built, no key touched at startup.
+    assert isinstance(app.state.generator, AnthropicGenerator)
+
+
+def test_generate_returns_a_draft_over_the_real_stack(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=60, rationale="core fit", gaps=["AWS"]))
+    generator = FakeGenerator("Dear team, I'd love to help.")
+    client = _generate_client(matcher, generator, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA Engineer", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+
+    resp = client.post(f"/jobs/{job['id']}/generate")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "generated"
+    assert body["draft"] == "Dear team, I'd love to help."
+
+
+def test_generate_on_store_without_profile_returns_cannot_generate(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=90, rationale="unused"))
+    generator = FakeGenerator("unused")
+    client = _generate_client(matcher, generator, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+
+    resp = client.post(f"/jobs/{job['id']}/generate")
+
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["status"] == "cannot_generate"
+    assert body["reason"] == "profile absent"
+    assert matcher.evaluate_called is False
+    assert generator.generate_called is False
+
+
+def test_generate_unknown_job_returns_404_e2e(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=50, rationale="unused"))
+    generator = FakeGenerator("unused")
+    client = _generate_client(matcher, generator, monkeypatch)
+
+    assert client.post("/jobs/nope/generate").status_code == 404
+
+
+def test_generate_writes_nothing_to_the_store(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=60, rationale="ok"))
+    generator = FakeGenerator("a letter")
+    client = _generate_client(matcher, generator, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+    job_before = client.get(f"/jobs/{job['id']}").json()
+    profile_before = client.get("/profile").json()
+
+    client.post(f"/jobs/{job['id']}/generate")
+
+    assert client.get(f"/jobs/{job['id']}").json() == job_before
+    assert client.get("/profile").json() == profile_before
+
+
+def test_match_routes_still_work_after_generator_wiring(monkeypatch):
+    matcher = FakeMatcher(MatcherLLMOutput(score=82, rationale="strong", gaps=[]))
+    client = _match_client(matcher, monkeypatch)
+    job = client.post("/jobs", json={"title": "QA", "company": "Acme"}).json()
+    client.put("/profile", json=VALID_PROFILE)
+
+    assert client.post(f"/jobs/{job['id']}/match").json()["verdict"] == "strong"
