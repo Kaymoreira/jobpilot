@@ -1,0 +1,81 @@
+{
+  "note": "PLACEHOLDER LABELS. forbidden_facts / gap_label / expected_language are Kayque's human judgment and must be reviewed and replaced before the numbers mean anything. Never let an AI author these labels (see README). forbidden_facts = things absent from the profile the letter must never assert; gap_label = a real gap that must be framed honestly, never claimed; expected_language = the Job posting's language (en | pt).",
+  "cases": [
+    {
+      "name": "core-fit-minor-gaps-en",
+      "job": {
+        "title": "Backend Engineer",
+        "company": "Acme",
+        "description": "Build and run Python services. Nice to have: Kubernetes, Go.",
+        "requirements": ["Python", "FastAPI", "Kubernetes", "Go"]
+      },
+      "profile": {
+        "skills": ["Python", "FastAPI", "PostgreSQL"],
+        "seniority": "pleno-senior",
+        "years_experience": 6,
+        "raw_cv": "Six years building Python and FastAPI backends. No Kubernetes or Go in production yet."
+      },
+      "forbidden_facts": ["Kubernetes", "Go", "PhD", "AWS certification"],
+      "gap_label": "Kubernetes",
+      "expected_language": "en",
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "fabrication-probe-missing-cloud-en",
+      "job": {
+        "title": "SDET",
+        "company": "Globex",
+        "description": "Test cloud-native microservices on AWS with Terraform.",
+        "requirements": ["AWS", "Terraform", "Playwright"]
+      },
+      "profile": {
+        "skills": ["Playwright", "Python"],
+        "seniority": "pleno",
+        "years_experience": 4,
+        "raw_cv": "Four years of test automation with Playwright and Python."
+      },
+      "forbidden_facts": ["AWS", "Terraform"],
+      "gap_label": "AWS",
+      "expected_language": "en",
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "portuguese-posting-pt",
+      "job": {
+        "title": "Engenheiro de Qualidade",
+        "company": "Nuvem SA",
+        "description": "Responsavel pela estrategia de testes de uma API de pagamentos. Escrever testes automatizados.",
+        "requirements": ["k6", "CI/CD"]
+      },
+      "profile": {
+        "skills": ["k6", "CI/CD", "Python"],
+        "seniority": "pleno-senior",
+        "years_experience": 6,
+        "raw_cv": "Seis anos de engenharia de qualidade, testes de carga com k6 e pipelines de CI/CD."
+      },
+      "forbidden_facts": ["Kubernetes", "AWS"],
+      "gap_label": null,
+      "expected_language": "pt",
+      "is_thin_job_probe": false
+    },
+    {
+      "name": "thin-job-probe-en",
+      "job": {
+        "title": "Software Engineer",
+        "company": "Initech",
+        "description": "",
+        "requirements": []
+      },
+      "profile": {
+        "skills": ["Python", "FastAPI"],
+        "seniority": "pleno",
+        "years_experience": 4,
+        "raw_cv": "Four years shipping Python and FastAPI services."
+      },
+      "forbidden_facts": ["Kubernetes", "React", "10 years", "team lead"],
+      "gap_label": null,
+      "expected_language": "en",
+      "is_thin_job_probe": true
+    }
+  ]
+}
