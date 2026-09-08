@@ -7,7 +7,31 @@ the parametrized repository contract tests (`test_repository.py` and
 """
 
 from jobpilot.matching import MatcherLLMOutput
-from jobpilot.models import Job, Profile
+from jobpilot.models import Job, MatchResult, Profile
+
+
+class FakeGenerator:
+    """In-memory Generator. Constructed with a canned draft string to return, or
+    an exception to raise. Records whether ``generate`` was called so the
+    profile-absent / match-failed short-circuits (no generation call) can be
+    asserted."""
+
+    def __init__(
+        self,
+        draft: str | None = None,
+        *,
+        error: Exception | None = None,
+    ) -> None:
+        self._draft = draft
+        self._error = error
+        self.generate_called = False
+
+    def generate(self, job: Job, profile: Profile, match: MatchResult) -> str:
+        self.generate_called = True
+        if self._error is not None:
+            raise self._error
+        assert self._draft is not None, "FakeGenerator needs a draft or an error"
+        return self._draft
 
 
 class FakeMatcher:

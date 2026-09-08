@@ -57,6 +57,29 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   Matcher adapter (`claude-opus-4-8` via structured `messages.parse`, single
   attempt with `max_retries=0` and a bounded timeout). The client is built
   lazily, so the app imports and starts with no `ANTHROPIC_API_KEY` set.
+- Generator (milestone M4): the second LLM-backed component, drafting a tailored
+  cover letter behind a `Generator` port, exposed through the generate endpoint:
+  - `POST /jobs/{job_id}/generate` returns an advisory `GenerateResult` (a
+    `generated`/`cannot_generate` status, a `draft`, and a `reason`). It reads the
+    stored `Job` and `Profile`, recomputes the match internally for
+    server-authoritative gaps, then drafts the letter grounded only in the
+    Profile (`raw_cv` + structured fields) and the Job. The call is synchronous,
+    ephemeral, and side-effect-free: a generate writes nothing.
+  - No fabrication: the letter is grounded only in what the Profile states (never
+    inventing skills, employers, dates, or qualifications), the match gaps are
+    framed honestly (areas to grow, never claimed as possessed), and salary is
+    never cited (it is omitted from the model input entirely, not merely
+    instructed against).
+  - Fail-closed on every uncertainty: an absent profile, a match that comes back
+    `cannot_assess`, an LLM error/timeout, a refusal, a truncated (`max_tokens`)
+    or empty response all resolve to `cannot_generate` with `draft = null` (never
+    a hollow or partial letter). An unknown `job_id` is `404`; a storage read
+    failure is a generic `500` (never a draft). The real cause is logged
+    server-side.
+  - The LLM sits behind a port, so the suite runs offline against a fake; an
+    offline, non-gating eval harness (`evals/generator/`) measures the real
+    model's fabrication rate, gap honesty, and language against a human-labeled
+    corpus. No new runtime dependency (reuses the `anthropic` SDK).
 
 ## [0.1.0] - 2026-08-10
 

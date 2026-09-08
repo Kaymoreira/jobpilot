@@ -14,8 +14,10 @@ from fastapi.responses import JSONResponse
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from jobpilot import __version__
+from jobpilot.generation import AnthropicGenerator
 from jobpilot.matching import AnthropicMatcher
 from jobpilot.repository import SqliteJobRepository, SqliteProfileRepository
+from jobpilot.routes.generator import router as generator_router
 from jobpilot.routes.jobs import router as jobs_router
 from jobpilot.routes.matcher import router as matcher_router
 from jobpilot.routes.profile import router as profile_router
@@ -101,6 +103,7 @@ def create_app(db_path: str | None = None) -> FastAPI:
     # Builds its Anthropic client lazily on first use, so no API key is needed
     # to create the app, start it, or run the test suite.
     app.state.matcher = AnthropicMatcher()
+    app.state.generator = AnthropicGenerator()
 
     app.add_middleware(BodySizeLimitMiddleware)
 
@@ -111,6 +114,7 @@ def create_app(db_path: str | None = None) -> FastAPI:
     app.include_router(jobs_router)
     app.include_router(profile_router)
     app.include_router(matcher_router)
+    app.include_router(generator_router)
 
     return app
 

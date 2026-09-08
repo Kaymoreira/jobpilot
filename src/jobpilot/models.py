@@ -314,3 +314,46 @@ class MatchResult(BaseModel):
             if verdict_for_score(self.score) != self.verdict:
                 raise ValueError("verdict must match the score band")
         return self
+
+
+# ---------------------------------------------------------------------------
+# M4: generator advisory result — closed status enum, self-validating draft
+# ---------------------------------------------------------------------------
+
+GenStatus = Literal["generated", "cannot_generate"]
+
+DRAFT_MAX = 6000  # per-draft character cap; truncate an over-length draft, not fail
+GENERATED_REASON = "ok"  # pinned success reason (never model-derived)
+
+
+class GenerateResult(BaseModel):
+    """The canonical, self-validating advisory result of a generation.
+
+    Failure is structurally distinct from a real letter: ``draft is None`` iff
+    ``status == "cannot_generate"``. A ``generated`` result must carry a
+    non-empty draft of at most ``DRAFT_MAX`` characters. This makes fail-open
+    impossible to construct: a failed run can never become a letter, and a
+    letter can never be null or hollow (GEN-15).
+    """
+
+    status: GenStatus
+    draft: str | None  # non-empty & <= DRAFT_MAX, or None iff cannot_generate
+    reason: str
+
+    @classmethod
+    def cannot_generate(cls, reason: str) -> "GenerateResult":
+        return cls(status="cannot_generate", draft=None, reason=reason)
+
+    @model_validator(mode="after")
+    def _consistent(self) -> "GenerateResult":
+        if self.status == "cannot_generate":
+            if self.draft is not None:
+                raise ValueError("cannot_generate must have draft = None")
+        else:
+            if self.draft is None:
+                raise ValueError("a generated result requires a draft")
+            if not self.draft.strip():
+                raise ValueError("a generated draft must be non-empty")
+            if len(self.draft) > DRAFT_MAX:
+                raise ValueError(f"draft must be at most {DRAFT_MAX} characters")
+        return self
